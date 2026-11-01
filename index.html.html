@@ -1,0 +1,2744 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ular Tangga Interaktif Dinamis - Jalur Rempah Praaksara</title>
+  <style>
+    :root {
+      --pawn-scale: 1.1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle at center, #6d5a4b 0%, #2c221e 100%);
+      color: #f8fafc;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER ATAS */
+    header {
+      background: #231b18;
+      border-bottom: 3px solid #f59e0b;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      z-index: 80;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .brand h1 {
+      font-size: 0.98rem;
+      font-weight: 900;
+      color: #fef3c7;
+      letter-spacing: 0.3px;
+      line-height: 1.15;
+    }
+
+    .brand small {
+      display: block;
+      font-size: 0.68rem;
+      color: #fbbf24;
+      font-weight: 700;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-top {
+      border: none;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.72rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.12s, filter 0.12s;
+      color: #fff;
+    }
+
+    .btn-top:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.1);
+    }
+
+    .btn-pawn   { background: #0d9488; border: 1px solid #2dd4bf; }
+    .btn-flash  { background: #7e22ce; border: 1px solid #c084fc; }
+    .btn-chal   { background: #ea580c; border: 1px solid #fdba74; }
+    .btn-edit   { background: #0284c7; border: 1px solid #7dd3fc; }
+    .btn-sound  { background: #475569; border: 1px solid #94a3b8; }
+    .btn-reset  { background: #dc2626; border: 1px solid #fca5a5; }
+
+    /* LAYOUT UTAMA */
+    .main-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 12px;
+      padding: 8px 14px;
+      height: calc(100vh - 48px);
+      overflow: hidden;
+    }
+
+    @media (max-width: 1024px) {
+      body { overflow-y: auto; height: auto; }
+      .main-layout { grid-template-columns: 1fr; height: auto; }
+    }
+
+    /* AREA PAPAN ULAR TANGGA */
+    .board-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .board-container {
+      position: relative;
+      height: min(calc(100vh - 64px), calc(100vw - 420px));
+      width: min(calc(100vh - 64px), calc(100vw - 420px));
+      max-height: 100%;
+      max-width: 100%;
+      background: #4b3f39;
+      border: 7px solid #4b3f39;
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), inset 0 0 0 2px #2e2522;
+    }
+
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      width: 100%;
+      height: 100%;
+      background: #3b302c;
+      gap: 1.5px;
+      padding: 1.5px;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+    }
+
+    .board-cell {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2px 3px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: filter 0.12s;
+    }
+
+    .board-cell:hover {
+      filter: brightness(1.12);
+    }
+
+    .tile-yellow  { background-color: #f4d025; color: #ffffff; }
+    .tile-purple  { background-color: #7b4397; color: #ffffff; }
+    .tile-green   { background-color: #3aa655; color: #ffffff; }
+    .tile-cyan    { background-color: #2ba6cb; color: #ffffff; }
+    .tile-orange  { background-color: #ef5a28; color: #ffffff; }
+    .tile-magenta { background-color: #c93b76; color: #ffffff; }
+
+    .cell-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 2;
+      line-height: 1;
+    }
+
+    .cell-num {
+      font-weight: 900;
+      font-size: clamp(0.65rem, 1.15vh, 0.95rem);
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+    }
+
+    .cell-icon {
+      font-size: clamp(0.6rem, 1.05vh, 0.85rem);
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+    }
+
+    .cell-tag {
+      font-size: clamp(0.42rem, 0.72vh, 0.56rem);
+      font-weight: 800;
+      text-align: center;
+      padding: 1px 2px;
+      border-radius: 3px;
+      z-index: 2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #boardSvg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* LAPISAN PION KLASIK */
+    #pawnsOverlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 60;
+    }
+
+    .board-pawn {
+      position: absolute;
+      transform: translate(-50%, -62%) scale(var(--pawn-scale));
+      width: 34px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: left 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  top 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  transform 0.22s ease;
+      pointer-events: auto;
+      cursor: pointer;
+      z-index: 65;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.75));
+    }
+
+    .board-pawn.crowded-pawn {
+      width: 27px;
+      height: 34px;
+    }
+
+    .board-pawn svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .pawn-code-badge {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: 900;
+      font-size: 0.6rem;
+      color: #ffffff;
+      text-shadow: 0 1px 3px #000, 0 0 4px #000;
+      pointer-events: none;
+    }
+
+    .board-pawn.crowded-pawn .pawn-code-badge {
+      font-size: 0.5rem;
+      bottom: 3px;
+    }
+
+    .board-pawn.active-turn-pawn {
+      z-index: 95 !important;
+      filter: drop-shadow(0 0 8px #fde047) drop-shadow(0 5px 9px rgba(0,0,0,0.9));
+      animation: pawnBounce 0.9s infinite alternate ease-in-out;
+    }
+
+    .board-pawn.active-turn-pawn::before {
+      content: "▼";
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #fde047;
+      text-shadow: 0 2px 4px #000;
+      font-weight: 900;
+    }
+
+    @keyframes pawnBounce {
+      from { transform: translate(-50%, -62%) scale(calc(var(--pawn-scale) * 1.12)); }
+      to   { transform: translate(-50%, -76%) scale(calc(var(--pawn-scale) * 1.22)); }
+    }
+
+    /* DADU 3D */
+    .dice-scene-lg {
+      --cube-size: 135px;
+      --half-size: 67.5px;
+      width: var(--cube-size);
+      height: var(--cube-size);
+      perspective: 900px;
+      position: relative;
+    }
+
+    .dice-scene-sm {
+      --cube-size: 52px;
+      --half-size: 26px;
+      width: var(--cube-size);
+      height: var(--cube-size);
+      perspective: 450px;
+      position: relative;
+    }
+
+    .cube-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(-20deg) rotateY(-30deg) rotateZ(4deg);
+      transition: transform 1.05s cubic-bezier(0.15, 0.88, 0.28, 1.12);
+      cursor: pointer;
+    }
+
+    .cube-3d.rolling-jump {
+      animation: diceJump 1.05s ease-in-out;
+    }
+
+    @keyframes diceJump {
+      0%   { top: 0px; }
+      28%  { top: -42px; }
+      58%  { top: 5px; }
+      78%  { top: -14px; }
+      100% { top: 0px; }
+    }
+
+    .cube-core {
+      position: absolute;
+      inset: 6%;
+      background: #e2e8f0;
+      border-radius: 20%;
+      pointer-events: none;
+    }
+    .cube-core-x  { transform: rotateY(90deg); background: #cbd5e1; }
+    .cube-core-y  { transform: rotateX(90deg); background: #f1f5f9; }
+    .cube-core-d1 { transform: rotateY(45deg); background: #e2e8f0; }
+    .cube-core-d2 { transform: rotateY(-45deg); background: #e2e8f0; }
+
+    .cube-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 22%;
+      background: radial-gradient(circle at 32% 28%, #ffffff 0%, #f8fafc 58%, #e2e8f0 88%, #cbd5e1 100%);
+      border: 2px solid #f1f5f9;
+      box-shadow:
+        inset 0 0 12px rgba(148, 163, 184, 0.55),
+        inset 4px 4px 9px rgba(255, 255, 255, 0.98),
+        inset -4px -4px 9px rgba(100, 116, 139, 0.28),
+        0 0 3px rgba(15, 23, 42, 0.25);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      padding: 15%;
+      backface-visibility: visible;
+    }
+
+    .face-1 { transform: rotateY(0deg) translateZ(var(--half-size)); }
+    .face-6 { transform: rotateY(180deg) translateZ(var(--half-size)); }
+    .face-3 { transform: rotateY(90deg) translateZ(var(--half-size)); }
+    .face-4 { transform: rotateY(-90deg) translateZ(var(--half-size)); }
+    .face-5 { transform: rotateX(90deg) translateZ(var(--half-size)); }
+    .face-2 { transform: rotateX(-90deg) translateZ(var(--half-size)); }
+
+    .pip-dot {
+      width: 72%;
+      height: 72%;
+      margin: auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #334155 0%, #0f172a 45%, #000000 100%);
+      box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.95),
+        0 1px 2px rgba(255, 255, 255, 0.85);
+    }
+
+    .dice-floor-shadow {
+      width: 120px;
+      height: 26px;
+      background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.25) 55%, transparent 76%);
+      border-radius: 50%;
+      margin-top: 18px;
+      filter: blur(3px);
+    }
+
+    .dice-floor-shadow.shadow-pulse {
+      animation: shadowScale 1.05s ease-in-out;
+    }
+
+    @keyframes shadowScale {
+      0%   { transform: scale(1); opacity: 0.85; }
+      28%  { transform: scale(0.55); opacity: 0.35; }
+      58%  { transform: scale(1.08); opacity: 0.95; }
+      78%  { transform: scale(0.8); opacity: 0.6; }
+      100% { transform: scale(1); opacity: 0.88; }
+    }
+
+    /* SIDEBAR KANAN */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .panel-card {
+      background: rgba(28, 25, 23, 0.95);
+      border: 2px solid #57534e;
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #fbbf24;
+      margin-bottom: 6px;
+    }
+
+    .turn-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.45);
+      border: 2px solid #78716c;
+      border-radius: 10px;
+      padding: 7px 10px;
+      margin-bottom: 8px;
+    }
+
+    .turn-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .turn-pawn-preview {
+      width: 30px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dice-widget-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #44403c;
+      border-radius: 12px;
+      padding: 8px 10px;
+      margin-bottom: 7px;
+    }
+
+    .btn-roll-3d {
+      width: 100%;
+      border: none;
+      border-bottom: 4px solid #b45309;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #ea580c 100%);
+      color: #1c1917;
+      font-weight: 900;
+      font-size: 0.82rem;
+      padding: 8px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+      transition: transform 0.12s;
+    }
+
+    .btn-roll-3d:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+
+    .btn-roll-3d:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .dice-num-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+
+    .dice-btn {
+      background: #ffffff;
+      color: #0f172a;
+      border: 2px solid #cbd5e1;
+      border-bottom: 3.5px solid #94a3b8;
+      border-radius: 8px;
+      padding: 4px 2px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.74rem;
+      transition: all 0.12s;
+    }
+
+    .dice-btn:hover:not(:disabled) {
+      background: #fef9c3;
+      border-color: #eab308;
+      border-bottom-color: #ca8a04;
+      transform: translateY(-2px);
+    }
+
+    .dice-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .step-adjust-row {
+      display: flex;
+      gap: 5px;
+    }
+
+    .btn-step {
+      flex: 1;
+      background: #292524;
+      color: #e7e5e4;
+      border: 1px solid #57534e;
+      padding: 5px 6px;
+      border-radius: 7px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-step:hover {
+      background: #44403c;
+    }
+
+    .deck-buttons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .deck-trigger-btn {
+      border: 2px solid rgba(255,255,255,0.22);
+      border-radius: 12px;
+      padding: 8px 9px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      text-align: left;
+      transition: transform 0.12s;
+    }
+
+    .deck-trigger-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .teams-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+
+    .team-card {
+      background: rgba(0, 0, 0, 0.45);
+      border: 2px solid #44403c;
+      border-radius: 10px;
+      padding: 5px 7px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+
+    .team-card:hover {
+      border-color: #a8a29e;
+    }
+
+    .team-card.active-team {
+      background: rgba(245, 158, 11, 0.18);
+      border-color: #fbbf24;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.22);
+    }
+
+    .log-box {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid #44403c;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 0.7rem;
+      color: #d6d3d1;
+      max-height: 68px;
+      overflow-y: auto;
+      line-height: 1.38;
+    }
+
+    .log-item {
+      padding-bottom: 2px;
+      margin-bottom: 2px;
+      border-bottom: 1px dashed #44403c;
+    }
+
+    /* MODAL & TRANSISI HALUS */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(12, 10, 9, 0.78);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card-smooth {
+      transform: scale(0.85) translateY(12px);
+      opacity: 0;
+      transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.32s ease;
+    }
+
+    .modal-backdrop.show .modal-card-smooth {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    .flip-stage {
+      width: 100%;
+      max-width: 530px;
+      height: 300px;
+      perspective: 1100px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .flip-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .flip-inner.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    .flip-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 20px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+
+    .flip-back {
+      transform: rotateY(180deg);
+    }
+
+    .flip-face.urgent-countdown {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 32px rgba(239, 68, 68, 0.85), inset 0 0 22px rgba(239, 68, 68, 0.4) !important;
+      animation: urgentSmoothPulse 0.75s infinite alternate ease-in-out;
+    }
+
+    @keyframes urgentSmoothPulse {
+      from { transform: scale(1); filter: brightness(1); }
+      to   { transform: scale(1.012); filter: brightness(1.06); }
+    }
+
+    .countdown-big-alert {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      color: #ffffff;
+      border: 2px solid #fde047;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 0.9rem;
+      margin: 5px auto 0;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.85);
+      animation: smoothBadgePop 0.6s infinite alternate ease-in-out;
+    }
+
+    .countdown-big-alert.show-alert {
+      display: inline-flex;
+    }
+
+    @keyframes smoothBadgePop {
+      from { transform: scale(0.97); }
+      to   { transform: scale(1.06); }
+    }
+
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .modal-btn-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 530px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      border: none;
+      padding: 10px 15px;
+      border-radius: 11px;
+      font-weight: 800;
+      font-size: 0.84rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.12s, filter 0.12s;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+
+    .editor-textarea {
+      width: 100%;
+      height: 120px;
+      background: #1c1917;
+      color: #f5f5f4;
+      border: 1px solid #57534e;
+      border-radius: 9px;
+      padding: 8px;
+      font-family: monospace;
+      font-size: 0.76rem;
+      margin-top: 4px;
+      margin-bottom: 10px;
+    }
+
+    .team-count-pill {
+      border: 2px solid #57534e;
+      background: #292524;
+      color: #e7e5e4;
+      font-weight: 900;
+      font-size: 0.82rem;
+      width: 38px;
+      height: 36px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .team-count-pill.active-count {
+      background: #f59e0b;
+      color: #1c1917;
+      border-color: #fde047;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+    }
+
+    .team-config-row {
+      display: grid;
+      grid-template-columns: 42px 1fr 78px auto;
+      gap: 7px;
+      align-items: center;
+      background: #292524;
+      border: 1px solid #44403c;
+      border-radius: 11px;
+      padding: 7px 9px;
+      margin-bottom: 6px;
+    }
+
+    .team-config-row.highlight-row {
+      border: 2px solid #fbbf24;
+      background: rgba(245, 158, 11, 0.14);
+    }
+
+    .team-input {
+      background: #1c1917;
+      color: #ffffff;
+      border: 1px solid #57534e;
+      border-radius: 7px;
+      padding: 5px 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      width: 100%;
+    }
+
+    .color-swatches {
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+
+    .swatch-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.45);
+      cursor: pointer;
+      transition: transform 0.12s;
+    }
+
+    .swatch-dot.selected-swatch {
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 2px #fbbf24;
+      transform: scale(1.18);
+    }
+
+    .team-edit-mini-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fde047;
+      border-radius: 5px;
+      padding: 2px 4px;
+      font-size: 0.62rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">⛵</div>
+      <div>
+        <h1>ULAR TANGGA INTERAKTIF (<span id="headerTeamCountLabel">6 KELOMPOK</span>)</h1>
+        <small>Materi: Jalur Rempah & Asal-Usul Nenek Moyang Nusantara (Bab 2 Praaksara)</small>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <button class="btn-top" style="background:#d97706;border:1px solid #fde047;" onclick="openTeamsConfigModal()">
+        👥 Atur Jumlah & Nama Pion
+      </button>
+      <button class="btn-top btn-pawn" onclick="cyclePawnSize()">
+        ♟️ Pion: <span id="pawnSizeLabel">BESAR</span>
+      </button>
+      <button class="btn-top btn-flash" onclick="openFlashcardModal(false)">
+        🃏 Flashcard (<span id="topCountQ">65</span>)
+      </button>
+      <button class="btn-top btn-chal" onclick="openChallengeModal(false)">
+        ⚡ Tantangan (<span id="topCountC">30</span>)
+      </button>
+      <button class="btn-top btn-edit" onclick="openSettingsModal()">
+        ⚙️ Edit Soal
+      </button>
+      <button class="btn-top btn-sound" id="soundToggleBtn" onclick="toggleSound()">
+        🔊 Suara: ON
+      </button>
+      <button class="btn-top btn-reset" onclick="openResetModal()">
+        🔄 Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-layout">
+
+    <!-- KIRI: PAPAN PERMAINAN 10x10 -->
+    <div class="board-stage">
+      <div class="board-container">
+        <div id="boardGrid" class="board-grid"></div>
+        <svg id="boardSvg" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg>
+        <div id="pawnsOverlay"></div>
+      </div>
+    </div>
+
+    <!-- KANAN: SIDEBAR DADU 3D & KLASEMEN -->
+    <aside class="sidebar">
+
+      <!-- KARTU GILIRAN & DADU 3D -->
+      <div class="panel-card" style="border-color:#f59e0b;">
+        <div class="panel-header">
+          <span>▶ GILIRAN KELOMPOK SEKARANG</span>
+          <button onclick="nextTurn()" style="background:#44403c;color:#fff;border:none;padding:2px 7px;border-radius:5px;font-size:0.66rem;font-weight:800;cursor:pointer;">
+            Lewati ⏭️
+          </button>
+        </div>
+
+        <div class="turn-box">
+          <div class="turn-left">
+            <div id="activeTeamBadge" class="turn-pawn-preview"></div>
+            <div>
+              <div id="activeTeamName" style="font-weight:900;font-size:0.92rem;color:#fff;">Kelompok 1 (K1)</div>
+              <div id="activeTeamPos" style="font-size:0.72rem;color:#fbbf24;font-weight:800;">Posisi: Kotak #1</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:0.62rem;color:#a8a29e;font-weight:800;display:block;">SKOR</span>
+            <span id="activeTeamScore" style="font-size:1rem;font-weight:900;color:#4ade80;">0 Poin</span>
+          </div>
+        </div>
+
+        <div class="panel-header" style="margin-bottom:4px;">
+          <span>🎲 DADU DIGITAL 3D & INPUT DADU FISIK</span>
+          <span style="background:#065f46;color:#6ee7b7;border:1px solid #34d399;padding:1px 6px;border-radius:999px;font-size:0.6rem;font-weight:800;">
+            1-6: Langsung Jalan
+          </span>
+        </div>
+
+        <div class="dice-widget-row">
+          <div onclick="rollDigitalDice()" title="Klik untuk Kocok Dadu Digital 3D!">
+            <div class="dice-scene-sm">
+              <div id="sidebarCube3D" class="cube-3d"></div>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+            <button id="digitalDiceBtn" class="btn-roll-3d" onclick="rollDigitalDice()">
+              🎲 KOCOK DADU DIGITAL 3D
+            </button>
+            <div style="display:flex;justify-content:space-between;font-size:0.66rem;color:#d6d3d1;font-weight:700;">
+              <span>Dadu Fisik (Langsung Jalan):</span>
+              <span id="lastRollBadge" style="color:#fbbf24;font-weight:900;">Siap!</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dice-num-grid">
+          <button class="dice-btn" onclick="handleDiceInput(1, false)">⚀<span>1</span></button>
+          <button class="dice-btn" onclick="handleDiceInput(2, false)">⚁<span>2</span></button>
+          <button class="dice-btn" onclick="handleDiceInput(3, false)">⚂<span>3</span></button>
+          <button class="dice-btn" onclick="handleDiceInput(4, false)">⚃<span>4</span></button>
+          <button class="dice-btn" onclick="handleDiceInput(5, false)">⚄<span>5</span></button>
+          <button class="dice-btn" onclick="handleDiceInput(6, false)">⚅<span>6</span></button>
+        </div>
+
+        <div class="step-adjust-row">
+          <button class="btn-step" onclick="manualAdjustStep(-1)">⬅️ Mundur 1</button>
+          <button class="btn-step" onclick="manualAdjustStep(1)">➡️ Maju 1</button>
+          <button class="btn-step" onclick="triggerTileLandingEvent(teams[currentTurnIndex])">🔍 Cek Kotak</button>
+        </div>
+      </div>
+
+      <!-- TOMBOL CEPAT FLASHCARD & TANTANGAN -->
+      <div class="deck-buttons-grid">
+        <button class="deck-trigger-btn" style="background:linear-gradient(135deg,#6b21a8,#3b0764);" onclick="openFlashcardModal(false)">
+          <span style="font-size:1.35rem;">🃏</span>
+          <div>
+            <div style="font-weight:900;font-size:0.76rem;">Flashcard Materi</div>
+            <div style="font-size:0.64rem;color:#e9d5ff;"><span id="deckCounterQuestion">65</span> Kartu Recall</div>
+          </div>
+        </button>
+        <button class="deck-trigger-btn" style="background:linear-gradient(135deg,#c2410c,#7c2d12);" onclick="openChallengeModal(false)">
+          <span style="font-size:1.35rem;">⚡</span>
+          <div>
+            <div style="font-weight:900;font-size:0.76rem;">Kartu Tantangan</div>
+            <div style="font-size:0.64rem;color:#ffedd5;"><span id="deckCounterChallenge">30</span> Kartu (4 Zonk)</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- KLASEMEN KELOMPOK DINAMIS -->
+      <div class="panel-card" style="flex:1;display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+          <div class="panel-header" style="gap:6px;flex-wrap:wrap;">
+            <span>🏆 KLASEMEN & PION</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <select id="quickTeamCountSelect" onchange="changeTeamCount(parseInt(this.value))" style="background:#292524;color:#fde047;border:1px solid #78716c;border-radius:5px;padding:2px 5px;font-size:0.66rem;font-weight:900;cursor:pointer;">
+                <option value="2">2 Kelompok</option>
+                <option value="3">3 Kelompok</option>
+                <option value="4">4 Kelompok</option>
+                <option value="5">5 Kelompok</option>
+                <option value="6" selected>6 Kelompok</option>
+                <option value="7">7 Kelompok</option>
+                <option value="8">8 Kelompok</option>
+              </select>
+              <button onclick="openTeamsConfigModal()" style="background:#44403c;color:#fde047;border:1px solid #78716c;border-radius:5px;padding:2px 6px;font-size:0.64rem;font-weight:800;cursor:pointer;" title="Atur Jumlah & Nama">
+                ⚙️ Atur
+              </button>
+            </div>
+          </div>
+          <div id="teamsListContainer" class="teams-grid"></div>
+        </div>
+
+        <div style="margin-top:6px;">
+          <div class="panel-header" style="margin-bottom:3px;">📜 RIWAYAT PERMAINAN</div>
+          <div id="gameLog" class="log-box">
+            <div class="log-item">⛵ Semua pion kelompok siap di <b>Kotak #1</b>. Klik <b>⚙️ Atur</b> di atas untuk mengubah jumlah pemain (2–8 orang/kelompok)!</div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- MODAL 1: PANGGUNG DADU PUTIH 3D -->
+  <div id="dice3dOverlayModal" class="modal-backdrop">
+    <div class="modal-card-smooth" style="background:radial-gradient(circle at top,#334155 0%,#0f172a 100%);border:4px solid #fbbf24;border-radius:26px;padding:24px 30px;max-width:390px;width:100%;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 25px 70px rgba(0,0,0,0.85);">
+      <span id="diceModalTeamTag" style="padding:3px 12px;border-radius:999px;font-size:0.75rem;font-weight:900;background:#fbbf24;color:#000;margin-bottom:7px;">
+        Kelompok 1 (K1)
+      </span>
+      <h3 id="diceModalStatusTitle" style="font-size:1.18rem;font-weight:900;color:#fff;margin-bottom:18px;letter-spacing:0.4px;">
+        MENGOCOK DADU DIGITAL 3D...
+      </h3>
+
+      <div style="height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div class="dice-scene-lg">
+          <div id="modalCube3D" class="cube-3d"></div>
+        </div>
+        <div id="modalDiceShadow" class="dice-floor-shadow"></div>
+      </div>
+
+      <div id="diceModalResultBadge" style="margin-top:12px;padding:8px 20px;border-radius:12px;background:#fbbf24;color:#1c1917;font-weight:900;font-size:1.1rem;opacity:0;transform:scale(0.9);transition:all 0.25s;">
+        🎲 ANGKA 6!
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ATUR JUMLAH & NAMA KELOMPOK -->
+  <div id="teamsConfigModal" class="modal-backdrop">
+    <div class="modal-card-smooth" style="background:#1c1917;color:#fff;border:3px solid #fbbf24;border-radius:20px;max-width:640px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 70px rgba(0,0,0,0.85);">
+      <div style="padding:12px 16px;background:#292524;border-bottom:1px solid #44403c;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <strong style="font-size:0.95rem;color:#fbbf24;">👥 ATUR JUMLAH PEMAIN & NAMA PION</strong>
+          <div style="font-size:0.7rem;color:#d6d3d1;">Pilih jumlah kelompok yang bermain (2 hingga 8 kelompok), lalu sesuaikan nama & warnanya.</div>
+        </div>
+        <button onclick="closeTeamsConfigModal()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;">✖</button>
+      </div>
+
+      <div style="padding:12px 16px;overflow-y:auto;flex:1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#292524;border:1px solid #44403c;border-radius:12px;padding:9px 12px;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:0.76rem;font-weight:900;color:#fde047;">PILIH JUMLAH KELOMPOK BERMAIN:</div>
+          </div>
+          <div id="modalTeamCountPills" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:0.72rem;font-weight:800;color:#d6d3d1;">Kustomisasi Pion Aktif:</span>
+          <div style="display:flex;gap:5px;">
+            <button onclick="applyPresetTeamNames('rempah')" style="background:#44403c;color:#fde047;border:1px solid #78716c;border-radius:6px;padding:3px 8px;font-size:0.66rem;font-weight:800;cursor:pointer;">
+              🌿 Preset Rempah
+            </button>
+            <button onclick="applyPresetTeamNames('default')" style="background:#44403c;color:#e7e5e4;border:1px solid #78716c;border-radius:6px;padding:3px 8px;font-size:0.66rem;font-weight:800;cursor:pointer;">
+              🔢 Preset 1-8
+            </button>
+          </div>
+        </div>
+
+        <div id="teamsConfigRowsContainer"></div>
+      </div>
+
+      <div style="padding:10px 16px;background:#292524;border-top:1px solid #44403c;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:0.7rem;color:#a8a29e;">💡 Papan akan menyesuaikan jumlah pion kelompok secara instan.</span>
+        <div style="display:flex;gap:7px;">
+          <button class="btn-action" style="background:#57534e;color:#fff;padding:7px 12px;" onclick="closeTeamsConfigModal()">Batal</button>
+          <button class="btn-action" style="background:#16a34a;color:#fff;padding:7px 16px;" onclick="saveTeamsConfigModal()">✅ Terapkan Pilihan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: 65 FLASHCARD RECALL -->
+  <div id="questionModal" class="modal-backdrop">
+    <div class="modal-card-smooth" style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:540px;">
+      <span id="questionTeamBadge" style="padding:3px 12px;border-radius:999px;font-size:0.74rem;font-weight:900;background:#fbbf24;color:#000;margin-bottom:5px;">
+        Kelompok 1
+      </span>
+      <h3 style="font-size:1.22rem;font-weight:900;color:#fde047;margin-bottom:2px;text-align:center;">
+        🃏 FLASHCARD RECALL PRAAKSARA & JALUR REMPAH
+      </h3>
+      <p style="font-size:0.72rem;color:#d6d3d1;margin-bottom:10px;text-align:center;">
+        Jawab soal di depan kartu, lalu <b>klik kartu untuk membalik</b> & melihat kunci jawaban!
+      </p>
+
+      <div class="flip-stage" onclick="flipQuestionCard()">
+        <div id="questionCardInner" class="flip-inner">
+          <div id="questionFrontFace" class="flip-face" style="background:linear-gradient(135deg,#3b0764,#1e1b4b);border:4px solid #fbbf24;color:#fff;">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:6px;gap:6px;flex-wrap:wrap;">
+                <span id="qCardTopicBadge" style="background:#fbbf24;color:#1c1917;font-weight:900;font-size:0.7rem;padding:2px 8px;border-radius:999px;">
+                  🌿 Flashcard #1 / 65
+                </span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <span id="qCardTimer" style="background:rgba(239,68,68,0.35);border:1px solid #f87171;color:#fecaca;font-weight:900;font-size:0.74rem;padding:2px 8px;border-radius:999px;">
+                    ⏱️ Waktu Jawab: 15 Detik
+                  </span>
+                  <button onclick="event.stopPropagation(); drawAnotherFlashcard()" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:3px 8px;border-radius:6px;font-size:0.68rem;font-weight:800;cursor:pointer;">
+                    🔀 Acak Soal
+                  </button>
+                </div>
+              </div>
+              <div style="width:100%;height:5px;background:rgba(255,255,255,0.18);border-radius:999px;overflow:hidden;margin-top:7px;">
+                <div id="qCardTimerBar" style="width:100%;height:100%;background:#4ade80;transition:width 1s linear, background-color 0.3s ease;"></div>
+              </div>
+              <div style="text-align:center;">
+                <div id="qCardUrgentAlert" class="countdown-big-alert">
+                  🚨 HITUNG MUNDUR: 5 DETIK!
+                </div>
+              </div>
+            </div>
+
+            <div style="margin:auto 0;text-align:center;padding:4px;">
+              <div id="qCardCategoryPill" style="display:inline-block;font-size:0.62rem;background:rgba(251,191,36,0.2);border:1px solid #fde047;color:#fde047;padding:2px 8px;border-radius:999px;font-weight:800;letter-spacing:0.5px;margin-bottom:5px;">
+                MATERI: JALUR REMPAH PRAAKSARA
+              </div>
+              <p id="qCardQuestionText" style="font-size:1.05rem;font-weight:900;line-height:1.38;color:#fff;"></p>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.2);padding-top:6px;font-size:0.7rem;color:#fde047;font-weight:800;">
+              <span>⭐ Skor Benar: +10 Poin</span>
+              <span>🔄 Klik Kartu untuk Balik Jawaban</span>
+            </div>
+          </div>
+
+          <div class="flip-face flip-back" style="background:#fffbeb;border:4px solid #16a34a;color:#1c1917;">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fde68a;padding-bottom:6px;">
+              <span style="background:#16a34a;color:#fff;font-weight:900;font-size:0.7rem;padding:2px 8px;border-radius:999px;">
+                🔑 KUNCI JAWABAN FLASHCARD
+              </span>
+              <span id="qCardBackNumber" style="font-size:0.7rem;font-weight:800;color:#57534e;">Kartu #1</span>
+            </div>
+
+            <div style="margin:auto 0;text-align:center;padding:4px;">
+              <p id="qCardQuestionSmall" style="font-size:0.72rem;color:#57534e;font-style:italic;margin-bottom:6px;"></p>
+              <div style="background:#dcfce7;border:2px solid #22c55e;border-radius:12px;padding:10px 12px;">
+                <p id="qCardAnswerText" style="font-size:1.02rem;font-weight:900;color:#14532d;line-height:1.35;"></p>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;border-top:1px solid #fde68a;padding-top:6px;font-size:0.68rem;color:#15803d;font-weight:800;">
+              <span>Klik kartu untuk lihat soal lagi</span>
+              <span>Berikan poin di tombol bawah 👇</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="btn-action" style="background:#fbbf24;color:#1c1917;" onclick="flipQuestionCard()">
+          🔄 Balik Kartu
+        </button>
+        <button class="btn-action" style="flex:1;background:#16a34a;color:#fff;" onclick="resolveQuestionCard(true)">
+          ✅ Dijawab Benar (+10 Poin)
+        </button>
+        <button class="btn-action" style="flex:1;background:#dc2626;color:#fff;" onclick="resolveQuestionCard(false)">
+          ❌ Belum Tepat (0 Poin)
+        </button>
+        <button class="btn-action" style="background:#44403c;color:#fff;" onclick="closeQuestionModal()">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: KARTU TANTANGAN & ZONK -->
+  <div id="challengeModal" class="modal-backdrop">
+    <div class="modal-card-smooth" style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:500px;">
+      <span id="challengeTeamBadge" style="padding:3px 12px;border-radius:999px;font-size:0.74rem;font-weight:900;background:#fbbf24;color:#000;margin-bottom:5px;">
+        Kelompok 1
+      </span>
+      <h3 style="font-size:1.22rem;font-weight:900;color:#fde047;margin-bottom:2px;text-align:center;">
+        ⚡ KARTU TANTANGAN & ICE BREAKING
+      </h3>
+      <p style="font-size:0.72rem;color:#d6d3d1;margin-bottom:10px;text-align:center;">
+        30 Kartu Seru — Awas ada <b>4 Kartu ZONK</b> di dalam tumpukan!
+      </p>
+
+      <div class="flip-stage" onclick="flipChallengeCard()">
+        <div id="challengeCardInner" class="flip-inner">
+          <div class="flip-face" style="background:linear-gradient(135deg,#ea580c,#be123c);border:4px solid #fde047;color:#fff;align-items:center;justify-content:center;text-align:center;">
+            <div style="font-size:3.2rem;margin-bottom:6px;">🎯</div>
+            <div style="font-size:0.72rem;font-weight:800;color:#fef08a;letter-spacing:1px;">TUMPUKAN 30 KARTU TANTANGAN</div>
+            <h4 style="font-size:1.35rem;font-weight:900;margin:5px 0;">KLIK UNTUK BUKA KARTU!</h4>
+            <p style="font-size:0.78rem;color:#ffedd5;">Apakah kelompokmu dapat Tantangan Seru atau ZONK?</p>
+          </div>
+
+          <div id="challengeCardBackFace" class="flip-face flip-back" style="background:#ffffff;border:4px solid #f59e0b;color:#1c1917;text-align:center;">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e7e5e4;padding-bottom:6px;">
+              <span id="cCardBadge" style="background:#fef3c7;color:#92400e;font-weight:900;font-size:0.7rem;padding:2px 8px;border-radius:999px;">
+                ⚡ Tantangan #1 / 30
+              </span>
+              <button onclick="event.stopPropagation(); drawAnotherChallengeCard()" style="background:#f5f5f4;color:#1c1917;border:1px solid #d6d3d1;padding:3px 8px;border-radius:6px;font-size:0.68rem;font-weight:800;cursor:pointer;">
+                🔀 Kocok Ulang
+              </button>
+            </div>
+
+            <div style="margin:auto 0;padding:4px;">
+              <div id="cCardIcon" style="font-size:2.4rem;margin-bottom:3px;">🎉</div>
+              <h4 id="cCardTitle" style="font-size:1.12rem;font-weight:900;color:#0f172a;margin-bottom:5px;"></h4>
+              <p id="cCardDesc" style="font-size:0.92rem;font-weight:700;color:#334155;line-height:1.38;"></p>
+            </div>
+
+            <div id="cCardFooterNote" style="border-top:1px solid #e7e5e4;padding-top:6px;font-size:0.74rem;font-weight:900;color:#15803d;">
+              🌟 Hadiah Kompak: +10 Poin Kelompok
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="challengeModalActions" class="modal-btn-row"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: NOTIFIKASI NAIK TANGGA / ULAR / FINISH -->
+  <div id="tileEventModal" class="modal-backdrop">
+    <div class="modal-card-smooth" style="background:#ffffff;color:#1c1917;border:4px solid #f59e0b;border-radius:22px;max-width:410px;width:100%;padding:22px;text-align:center;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
+      <div id="eventModalIcon" style="font-size:3.1rem;margin-bottom:5px;">🎉</div>
+      <span id="eventModalBadge" style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:0.7rem;font-weight:900;background:#fef3c7;color:#92400e;margin-bottom:5px;">
+        Info Kotak
+      </span>
+      <h3 id="eventModalTitle" style="font-size:1.25rem;font-weight:900;margin-bottom:7px;"></h3>
+      <div style="background:#f5f5f4;border:1px solid #e7e5e4;border-radius:12px;padding:12px;margin-bottom:14px;">
+        <p id="eventModalDesc" style="font-size:0.92rem;font-weight:700;color:#292524;line-height:1.4;"></p>
+      </div>
+      <div id="eventModalActions" style="display:flex;gap:7px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: PENGATURAN SOAL -->
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card-smooth" style="background:#1c1917;color:#fff;border:2px solid #f59e0b;border-radius:20px;max-width:620px;width:100%;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:12px 16px;background:#292524;border-bottom:1px solid #44403c;display:flex;justify-content:space-between;align-items:center;">
+        <strong style="font-size:0.9rem;color:#fbbf24;">⚙️ PENGATURAN 65 FLASHCARD & 30 KARTU TANTANGAN</strong>
+        <button onclick="closeSettingsModal()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer;">✖</button>
+      </div>
+      <div style="padding:14px 16px;overflow-y:auto;flex:1;">
+        <label style="font-size:0.75rem;font-weight:800;color:#fde047;">Daftar 65 Flashcard Pertanyaan (Format: Pertanyaan | Jawaban):</label>
+        <textarea id="questionsInput" class="editor-textarea" style="height:165px;"></textarea>
+
+        <label style="font-size:0.75rem;font-weight:800;color:#fde047;">Daftar 30 Kartu Tantangan (Format: Judul | Deskripsi | Tipe: normal/safe/zonk):</label>
+        <textarea id="challengesInput" class="editor-textarea" style="height:165px;"></textarea>
+      </div>
+      <div style="padding:10px 16px;background:#292524;border-top:1px solid #44403c;display:flex;justify-content:flex-end;gap:7px;">
+        <button class="btn-action" style="background:#57534e;color:#fff;padding:7px 12px;" onclick="closeSettingsModal()">Batal</button>
+        <button class="btn-action" style="background:#16a34a;color:#fff;padding:7px 15px;" onclick="saveSettings()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: RESET PERMAINAN -->
+  <div id="resetModal" class="modal-backdrop">
+    <div class="modal-card-smooth" style="background:#1c1917;color:#fff;border:3px solid #ef4444;border-radius:20px;max-width:340px;width:100%;padding:20px;text-align:center;">
+      <div style="font-size:2.4rem;margin-bottom:5px;">🔄</div>
+      <h3 style="font-size:1.1rem;font-weight:900;margin-bottom:5px;">Reset Permainan?</h3>
+      <p style="font-size:0.76rem;color:#d6d3d1;margin-bottom:14px;">Semua pion kelompok akan kembali ke Kotak #1 dan skor kembali 0.</p>
+      <div style="display:flex;gap:7px;">
+        <button class="btn-action" style="flex:1;background:#dc2626;color:#fff;" onclick="confirmResetGame()">Ya, Reset</button>
+        <button class="btn-action" style="flex:1;background:#44403c;color:#fff;" onclick="closeResetModal()">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    /* =========================================================
+       1. EFEK SUARA
+    ========================================================= */
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function playTone(freq, type = 'sine', duration = 0.11, delay = 0, vol = 0.14) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + delay);
+        osc.stop(audioCtx.currentTime + delay + duration);
+      } catch (e) {}
+    }
+
+    function sfxStep()       { playTone(520, 'triangle', 0.065, 0, 0.16); }
+    function sfxDiceRattle() { [280, 420, 320, 510, 390, 610, 470].forEach((f, i) => playTone(f, 'triangle', 0.05, i * 0.11, 0.13)); }
+    function sfxDiceLand()   { playTone(380, 'sine', 0.06, 0, 0.16); playTone(660, 'triangle', 0.1, 0.06, 0.18); }
+    function sfxLadder()     { [330, 392, 494, 587, 659, 784].forEach((f, i) => playTone(f, 'triangle', 0.13, i * 0.07, 0.17)); }
+    function sfxSnake()      { [600, 520, 440, 360, 280, 210].forEach((f, i) => playTone(f, 'sawtooth', 0.13, i * 0.07, 0.12)); }
+    function sfxFlip()       { playTone(440, 'sine', 0.08, 0, 0.14); playTone(660, 'sine', 0.12, 0.07, 0.16); }
+    function sfxSuccess()    { [523, 659, 784, 1046].forEach((f, i) => playTone(f, 'triangle', 0.15, i * 0.08, 0.18)); }
+    function sfxZonk()       { [300, 250, 200, 150].forEach((f, i) => playTone(f, 'sawtooth', 0.2, i * 0.11, 0.16)); }
+
+    function sfxCountdownTick(secLeft) {
+      const pitchMap = { 5: 740, 4: 830, 3: 932, 2: 1046, 1: 1244 };
+      const baseFreq = pitchMap[secLeft] || 880;
+      playTone(baseFreq, 'square', 0.08, 0, 0.18);
+      playTone(baseFreq * 1.12, 'triangle', 0.09, 0.11, 0.2);
+    }
+
+    function sfxTimeUpBuzzer() {
+      playTone(220, 'sawtooth', 0.28, 0, 0.22);
+      playTone(185, 'sawtooth', 0.45, 0.22, 0.24);
+      playTone(146, 'square', 0.5, 0.42, 0.22);
+    }
+
+    function sfxVictoryFanfare() {
+      const notes = [
+        { f: 523.25, d: 0.14, t: 0.00 },
+        { f: 659.25, d: 0.14, t: 0.15 },
+        { f: 783.99, d: 0.14, t: 0.30 },
+        { f: 1046.5, d: 0.32, t: 0.45 },
+        { f: 783.99, d: 0.16, t: 0.80 },
+        { f: 1046.5, d: 0.55, t: 0.98 }
+      ];
+      notes.forEach(n => playTone(n.f, 'triangle', n.d, n.t, 0.22));
+    }
+
+    /* =========================================================
+       1B. CONFETTI KEMENANGAN
+    ========================================================= */
+    let confettiParticles = [];
+    let confettiAnimId = null;
+
+    function launchVictoryConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#facc15', '#ef4444', '#3b82f6', '#22c55e', '#a855f7', '#ec4899', '#f97316', '#14b8a6', '#ffffff'];
+
+      for (let i = 0; i < 220; i++) {
+        const fromLeft = (i % 2 === 0);
+        confettiParticles.push({
+          x: i < 80 ? (fromLeft ? 0 : canvas.width) : Math.random() * canvas.width,
+          y: i < 80 ? canvas.height * 0.65 : -20 - Math.random() * canvas.height * 0.5,
+          vx: i < 80 ? (fromLeft ? (Math.random() * 14 + 5) : -(Math.random() * 14 + 5)) : (Math.random() - 0.5) * 6,
+          vy: i < 80 ? -(Math.random() * 15 + 8) : (Math.random() * 5 + 3),
+          size: Math.random() * 9 + 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 11,
+          shape: Math.random() > 0.35 ? 'rect' : 'circle',
+          gravity: 0.24,
+          opacity: 1
+        });
+      }
+
+      if (!confettiAnimId) animateConfettiLoop();
+    }
+
+    function animateConfettiLoop() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      confettiParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.vx *= 0.99;
+        p.rot += p.rotSpeed;
+        if (p.y > canvas.height - 60) p.opacity -= 0.025;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.opacity);
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+
+        if (p.shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.62);
+        }
+        ctx.restore();
+      });
+
+      confettiParticles = confettiParticles.filter(p => p.y < canvas.height + 50 && p.opacity > 0.02);
+
+      if (confettiParticles.length > 0) {
+        confettiAnimId = requestAnimationFrame(animateConfettiLoop);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confettiAnimId = null;
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔊 Suara: ON' : '🔇 Suara: OFF';
+    }
+
+    /* =========================================================
+       2. DATA KELOMPOK & PION KLASIK
+    ========================================================= */
+    const pawnColorPalette = [
+      { name: 'Kuning Emas',   mainColor: '#eab308', lightColor: '#fef08a', darkColor: '#a16207' },
+      { name: 'Biru Samudra',  mainColor: '#2563eb', lightColor: '#93c5fd', darkColor: '#1d4ed8' },
+      { name: 'Merah Marun',   mainColor: '#e11d48', lightColor: '#fda4af', darkColor: '#9f1239' },
+      { name: 'Hijau Zamrud',  mainColor: '#16a34a', lightColor: '#86efac', darkColor: '#14532d' },
+      { name: 'Ungu Kerajaan', mainColor: '#9333ea', lightColor: '#d8b4fe', darkColor: '#581c87' },
+      { name: 'Toska Bahari',  mainColor: '#0d9488', lightColor: '#5eead4', darkColor: '#115e59' },
+      { name: 'Oranye Rempah', mainColor: '#ea580c', lightColor: '#fdba74', darkColor: '#9a3412' },
+      { name: 'Pink Fuli',     mainColor: '#db2777', lightColor: '#f9a8d4', darkColor: '#831843' }
+    ];
+
+    const allTeamsPool = [
+      { id: 1, code: 'K1', name: 'Kelompok 1', ...pawnColorPalette[0], colorIdx: 0, pos: 1, score: 0 },
+      { id: 2, code: 'K2', name: 'Kelompok 2', ...pawnColorPalette[1], colorIdx: 1, pos: 1, score: 0 },
+      { id: 3, code: 'K3', name: 'Kelompok 3', ...pawnColorPalette[2], colorIdx: 2, pos: 1, score: 0 },
+      { id: 4, code: 'K4', name: 'Kelompok 4', ...pawnColorPalette[3], colorIdx: 3, pos: 1, score: 0 },
+      { id: 5, code: 'K5', name: 'Kelompok 5', ...pawnColorPalette[4], colorIdx: 4, pos: 1, score: 0 },
+      { id: 6, code: 'K6', name: 'Kelompok 6', ...pawnColorPalette[5], colorIdx: 5, pos: 1, score: 0 },
+      { id: 7, code: 'K7', name: 'Kelompok 7', ...pawnColorPalette[6], colorIdx: 6, pos: 1, score: 0 },
+      { id: 8, code: 'K8', name: 'Kelompok 8', ...pawnColorPalette[7], colorIdx: 7, pos: 1, score: 0 }
+    ];
+
+    let activeTeamCount = 6;
+    let teams = allTeamsPool.slice(0, activeTeamCount);
+
+    let currentTurnIndex = 0;
+    let isAnimating = false;
+
+    const pawnSizePresets = [
+      { label: 'NORMAL', scale: 0.9 },
+      { label: 'BESAR',  scale: 1.1 },
+      { label: 'EKSTRA', scale: 1.3 }
+    ];
+    let pawnSizeIdx = 1;
+
+    function cyclePawnSize() {
+      pawnSizeIdx = (pawnSizeIdx + 1) % pawnSizePresets.length;
+      const p = pawnSizePresets[pawnSizeIdx];
+      document.documentElement.style.setProperty('--pawn-scale', p.scale);
+      document.getElementById('pawnSizeLabel').textContent = p.label;
+    }
+
+    function getClassicPawnSVG(team) {
+      return `
+        <svg viewBox="0 0 64 82" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round">
+            <ellipse cx="32" cy="72" rx="24" ry="6" fill="${team.darkColor}"/>
+            <rect x="11" y="63" width="42" height="8" rx="4" fill="${team.mainColor}"/>
+            <path d="M 16 64 C 18 46, 23 36, 25 27 L 39 27 C 41 36, 46 46, 48 64 Z" fill="${team.mainColor}"/>
+            <rect x="21" y="23" width="22" height="5.5" rx="2.7" fill="${team.lightColor}"/>
+            <circle cx="32" cy="14" r="10.5" fill="${team.mainColor}"/>
+          </g>
+          <ellipse cx="32" cy="72" rx="24" ry="6" fill="${team.darkColor}"/>
+          <rect x="11" y="63" width="42" height="8" rx="4" fill="${team.mainColor}"/>
+          <path d="M 16 64 C 18 46, 23 36, 25 27 L 39 27 C 41 36, 46 46, 48 64 Z" fill="${team.mainColor}"/>
+          <path d="M 22 62 C 23 47, 26 37, 28 28 L 31 28 C 30 37, 28 47, 27 62 Z" fill="${team.lightColor}" opacity="0.48"/>
+          <rect x="21" y="23" width="22" height="5.5" rx="2.7" fill="${team.darkColor}"/>
+          <circle cx="32" cy="14" r="10.5" fill="${team.mainColor}"/>
+          <circle cx="28.5" cy="11" r="3.5" fill="${team.lightColor}" opacity="0.7"/>
+        </svg>
+      `;
+    }
+
+    /* =========================================================
+       3. DATA TANGGA, ULAR & FLASHCARD
+    ========================================================= */
+    const ladders = {
+      4:  { to: 25, style: 'brown',  text: "Angin Muson Baik! Naik ke #25" },
+      8:  { to: 32, style: 'tan',    text: "Perahu Bercadik Melaju! Naik ke #32" },
+      20: { to: 41, style: 'green',  text: "Pelayaran Lancar! Naik ke #41" },
+      28: { to: 74, style: 'brown',  text: "Jalur Rempah Terbuka! Naik Jauh ke #74" },
+      44: { to: 58, style: 'orange', text: "Barter Sukses! Naik ke #58" },
+      52: { to: 69, style: 'silver', text: "Navigasi Bintang Tepat! Naik ke #69" },
+      64: { to: 85, style: 'green',  text: "Komoditas Laku Keras! Naik ke #85" },
+      79: { to: 99, style: 'tan',    text: "Hampir Sampai Bandar Utama! Naik ke #99" }
+    };
+
+    const snakes = {
+      24: { to: 5,  style: 'magenta', text: "Ombak Tinggi! Turun ke #5" },
+      38: { to: 18, style: 'yellow',  text: "Angin Berbalik! Turun ke #18" },
+      55: { to: 34, style: 'green',   text: "Awas Karang! Turun ke #34" },
+      68: { to: 49, style: 'red',     text: "Perahu Bocor! Turun ke #49" },
+      88: { to: 51, style: 'blue',    text: "Pusaran Arus Laut! Turun ke #51" },
+      96: { to: 66, style: 'red',     text: "Badai Samudra! Turun ke #66" },
+      98: { to: 42, style: 'blue',    text: "Hantaman Badai Besar! Turun jauh ke #42" }
+    };
+
+    const questionSquares = new Set([
+      2, 6, 11, 14, 17, 22, 26, 30, 35, 39, 45, 48, 53, 57, 61, 65, 71, 75, 81, 84, 89, 92, 95
+    ]);
+
+    const challengeSquares = new Set([
+      3, 7, 10, 13, 16, 19, 23, 27, 31, 36, 40, 43, 47, 50, 54, 59, 62, 67, 72, 76, 80, 83, 87, 91, 94, 97
+    ]);
+
+    // 65 Flashcard Soal
+    let questionDeck = [
+      { q: "Apa yang dimaksud dengan 'Jalur Rempah' pada masa praaksara di Nusantara?", a: "Jaringan pelayaran dan pertukaran komoditas rempah serta hasil alam antarpulau di Nusantara dan dunia kuno sebelum masyarakat mengenal tulisan." },
+      { q: "Di situs manakah para arkeolog menemukan jambangan berisi cengkeh tertua di dunia yang berasal dari sekitar tahun 1700 SM?", a: "Di Situs Terqa, Mesopotamia (wilayah negara Suriah saat ini)." },
+      { q: "Temuan cengkeh berusia 1700 SM di Terqa (Mesopotamia) membuktikan hal penting apa tentang Nusantara?", a: "Membuktikan bahwa rempah asli Nusantara sudah diperdagangkan hingga ke Timur Tengah sejak zaman praaksara." },
+      { q: "Tanaman Cengkeh (Syzygium aromaticum) pada zaman dahulu bersifat endemik. Di kepulauan manakah cengkeh asli tumbuh?", a: "Di Kepulauan Maluku Utara (Ternate, Tidore, Moti, Makian, dan Bacan)." },
+      { q: "Apa arti istilah 'tanaman endemik' pada komoditas cengkeh dan pala di Maluku?", a: "Tanaman yang secara alami hanya tumbuh di satu wilayah geografis tertentu dan tidak ditemukan di tempat lain di dunia." },
+      { q: "Di kepulauan manakah tanaman Pala (Myristica fragrans) tumbuh secara endemik pada masa kuno?", a: "Di Kepulauan Banda (Maluku Tengah)." },
+      { q: "Pohon pala menghasilkan dua jenis komoditas rempah bernilai tinggi dari satu buah yang sama. Sebutkan keduanya!", a: "Biji Pala dan Fuli (selaput merah pembungkus biji pala / bunga pala)." },
+      { q: "Rempah apakah yang ditemukan di dalam rongga hidung mumi Firaun Ramses II (wafat 1213 SM) di Mesir?", a: "Butiran Lada Hitam (Piper nigrum) yang berasal dari jaringan maritim Samudra Hindia/Nusantara." },
+      { q: "Untuk keperluan apa bangsa Mesir Kuno menggunakan rempah seperti lada hitam dan kapur barus pada jenazah Firaun?", a: "Sebagai bahan pengawet alami dan pengharum dalam proses mumifikasi (pembuatan mumi)." },
+      { q: "Nenek moyang bangsa Indonesia yang menjadi pelopor pelayaran antarpulau sejak sekitar 2000–1500 SM adalah penutur rumpun bahasa apa?", a: "Rumpun Bahasa Austronesia." },
+      { q: "Apa nama inovasi teknologi penyeimbang di sisi kiri dan kanan perahu kayu yang diciptakan pelaut Austronesia?", a: "Cadik (sehingga disebut Perahu Bercadik / Outrigger Canoe)." },
+      { q: "Apa fungsi utama pemasangan 'cadik' pada perahu nenek moyang Nusantara?", a: "Untuk menjaga keseimbangan perahu agar tidak mudah terbalik saat menerjang ombak besar di lautan lepas." },
+      { q: "Bagaimana cara pembuatan perahu paling awal pada masa Mesolitikum dan Neolitikum sebelum adanya papan kayu paku?", a: "Dengan teknik perahu lesung (melubangi satu batang pohon besar secara utuh menggunakan kapak batu/beliung persegi)." },
+      { q: "Alat batu khas zaman Neolitikum yang digunakan masyarakat praaksara untuk menebang pohon dan memahat perahu bercadik adalah...", a: "Beliung Persegi dan Kapak Lonjong." },
+      { q: "Di pulau manakah di Sulawesi Tenggara ditemukan lukisan dinding gua (rock art) prasejarah bergambar perahu layar dan perahu bercadik?", a: "Di Gua Liang Kabori dan Gua Metanduno, Pulau Muna (Sulawesi Tenggara)." },
+      { q: "Selain di Pulau Muna, sebutkan wilayah di Kepulauan Maluku dan Papua yang memiliki lukisan cadas (rock art) bergambar perahu praaksara!", a: "Kepulauan Kei, Pulau Seram (Maluku), dan Teluk Speelman di Kaimana (Papua Barat)." },
+      { q: "Bagaimana cara masyarakat Nusantara zaman praaksara melakukan jual-beli rempah padahal belum mengenal uang koin maupun tulisan?", a: "Menggunakan sistem Barter (tukar-menukar barang secara langsung berdasarkan kesepakatan)." },
+      { q: "Bagaimana hubungan peran antara masyarakat pedalaman (hulu) dan masyarakat pesisir (hilir) dalam Jalur Rempah praaksara?", a: "Masyarakat hulu mengumpulkan rempah/hasil hutan lalu membawanya lewat sungai ke hilir (pesisir) untuk dibarter dengan pelaut." },
+      { q: "Angin musiman apakah yang dimanfaatkan pelaut Nusantara untuk berlayar pergi dan pulang setiap 6 bulan sekali?", a: "Angin Muson (Angin Muson Barat dan Angin Muson Timur)." },
+      { q: "Sebelum mengenal kompas magnetik, apa yang diamati pelaut Nusantara pada malam hari untuk menentukan arah mata angin?", a: "Navigasi bintang (rasi bintang seperti Pari/Crux dan Orion/Waluku)." },
+      { q: "Selain bintang di malam hari, tanda alam apa yang dibaca oleh pelaut praaksara pada siang hari di tengah laut?", a: "Arah gelombang/arus laut, warna air laut, arah angin, dan terbangnya burung laut menuju daratan." },
+      { q: "Kebudayaan logam (perunggu) dari Vietnam Utara yang artefaknya tersebar luas di sepanjang jalur pelayaran Nusantara disebut kebudayaan apa?", a: "Kebudayaan Dongson." },
+      { q: "Benda perunggu berbentuk seperti dandang terbalik dari kebudayaan Dongson yang ditemukan hingga ke Kepulauan Maluku dan Nusa Tenggara adalah...", a: "Nekara Perunggu (kettle drum)." },
+      { q: "Mengapa penemuan Nekara Perunggu di Kepulauan Maluku dan Banda menjadi bukti kuat adanya perdagangan rempah masa praaksara?", a: "Karena Maluku tidak menghasilkan tembaga/timah, sehingga nekara tersebut pasti dibawa oleh pelaut untuk ditukar (dibarter) dengan cengkeh dan pala." },
+      { q: "Apa nama nekara perunggu berukuran raksasa yang dipuja di Pura Penataran Sasih, Bali, dan menjadi bukti kejayaan masa Perundagian?", a: "Nekara Bulan Pejeng." },
+      { q: "Selain di Bali dan Maluku, di pulau manakah di Sulawesi Selatan ditemukan Nekara Perunggu besar bergambar gajah, burung merak, dan katak?", a: "Di Pulau Selayar (Sulawesi Selatan), yang merupakan titik transit strategis jalur pelayaran menuju Maluku." },
+      { q: "Selain nekara, sebutkan artefak senjata/upacara dari bahan perunggu yang tersebar melalui jalur maritim praaksara!", a: "Kapak Corong (Kapak Sepatu), Candrasa, dan Bejana Perunggu." },
+      { q: "Benda perhiasan kecil dari India yang ribuan jumlahnya ditemukan di situs-situs pesisir praaksara Indonesia sebagai alat barter adalah...", a: "Manik-manik kaca (Indo-Pacific glass beads) dan batu karnelian (batu akik merah/oranye)." },
+      { q: "Sebutkan nama situs penguburan masa akhir praaksara (Perundagian) di tepi teluk Bali Barat yang kaya akan temuan manik-manik India dan emas!", a: "Situs Gilimanuk (Jembrana, Bali)." },
+      { q: "Sebutkan nama situs arkeologi di pesisir utara Jawa Barat (Bekasi-Karawang) yang membuktikan adanya kontak dagang maritim dengan India dan Laut Cina Selatan!", a: "Situs Buni dan Kompleks Prasejarah Batujaya." },
+      { q: "Pada situs Buni dan Batujaya di Jawa Barat, ditemukan tembikar (gerabah) khas India Kuno yang disebut...", a: "Gerabah Rouletted Ware (tembikar berhias roda putar dari India)." },
+      { q: "Komoditas kristal getah pohon beraroma harum dari hutan Sumatera Utara yang sejak zaman kuno terkenal hingga ke Mesir dan Timur Tengah adalah...", a: "Kapur Barus (Kamper) dari wilayah Barus, Tapanuli Tengah." },
+      { q: "Selain Kapur Barus, getah pohon harum apa lagi dari dataran tinggi Sumatera yang menjadi komoditas penting dalam ritual keagamaan kuno?", a: "Kemenyan (Styrax benzoin)." },
+      { q: "Wilayah Kepulauan Nusa Tenggara Timur (khususnya Pulau Timor dan Sumba) menyumbang komoditas kayu harum dalam Jalur Rempah, yaitu...", a: "Kayu Cendana (Santalum album)." },
+      { q: "Rempah berupa kulit pohon beraroma manis dan hangat yang tumbuh subur di pedalaman Sumatera (Kerinci/Jambi dan Sumatera Barat) adalah...", a: "Kayu Manis (Cinnamomum burmannii)." },
+      { q: "Tanaman rempah pedas apa yang merupakan tanaman asli Nusantara (Jawa dan Bali) yang bentuk buahnya mirip cabai namun tumbuh merambat?", a: "Cabai Jawa (Cabe Puyang / Piper retrofractum) dan Kemukus." },
+      { q: "Selain rempah dari daratan, sebutkan minimal 3 komoditas hasil laut Nusantara yang ikut diperdagangkan dalam pelayaran praaksara!", a: "Kulit penyu (sisik), mutiara, kerang laut, dan teripang." },
+      { q: "Pulau besar di lepas pantai Afrika Timur manakah yang penduduk aslinya terbukti memiliki leluhur pelaut Nusantara dari masa lampau?", a: "Pulau Madagaskar." },
+      { q: "Bahasa pribumi di Pulau Madagaskar (Bahasa Malagasi) memiliki kekerabatan paling dekat dengan bahasa suku apa di Indonesia?", a: "Bahasa Suku Ma'anyan di daerah aliran Sungai Barito, Kalimantan Selatan/Tengah." },
+      { q: "Tanaman pangan tropis apa saja yang dibawa oleh pelaut Austronesia dari Nusantara hingga menyebar ke Madagaskar dan Kepulauan Pasifik?", a: "Pisang, Kelapa, Talas (Keladi), dan Ubi." },
+      { q: "Apa nama tradisi gerabah bercorak hias geometris di Sulawesi (Situs Kalumpang) dan Filipina yang menunjukkan jaringan pelayaran masa Neolitikum?", a: "Tradisi Gerabah Sa Huynh-Kalanay." },
+      { q: "Apa budaya gerabah para pelaut Austronesia yang menyebar dari kepulauan timur Indonesia hingga ke Melanesia dan Polinesia?", a: "Budaya Gerabah Lapita." },
+      { q: "Bahan batu alam mengkilap seperti kaca berwarna hitam yang diperdagangkan antarpulau pada masa praaksara untuk membuat mata panah/pisau tajam adalah...", a: "Batu Obsidian (batu kaca vulkanik)." },
+      { q: "Mengapa sungai-sungai besar di Sumatera dan Kalimantan (seperti Sungai Musi, Batanghari, dan Barito) sangat penting dalam Jalur Rempah praaksara?", a: "Karena sungai berfungsi sebagai jalur transportasi alami untuk mengangkut hasil hutan dan rempah dari pedalaman menuju pelabuhan pesisir." },
+      { q: "Situs prasejarah di pesisir Kabupaten Rembang (Jawa Tengah) yang menemukan kubur tempayan, nekara perunggu, dan manik-manik maritim adalah...", a: "Situs Plawangan (Rembang)." },
+      { q: "Sebutkan 3 kegunaan utama rempah-rempah bagi masyarakat peradaban kuno di luar Nusantara!", a: "1) Bahan obat-obatan & penghangat tubuh, 2) Wewangian ritual & pengawet mumi, 3) Bumbu masakan bangsawan." },
+      { q: "Apa yang dimaksud dengan masa 'Protosejarah' dalam perkembangan Jalur Rempah Nusantara?", a: "Masa peralihan ketika masyarakat Nusantara belum meninggalkan tulisan sendiri, namun keberadaannya sudah dicatat dalam berita asing." },
+      { q: "Dalam kitab sastra India Kuno 'Ramayana' (sekitar abad ke-3 SM), kepulauan Nusantara yang kaya rempah, emas, dan perak disebut dengan nama apa?", a: "Yawadwipa (Pulau Jawa) dan Suwarnadwipa (Pulau Emas / Sumatera)." },
+      { q: "Apakah laut di Nusantara pada zaman praaksara menjadi penghalang atau pemersatu antarpulau? Jelaskan singkat!", a: "Menjadi pemersatu dan penghubung utama terjadinya pertukaran barang, teknologi perahu, bahasa, dan budaya." },
+      { q: "Apa dampak paling bersejarah dari ramainya jaringan Jalur Rempah pada akhir zaman praaksara bagi peradaban Indonesia?", a: "Masuknya aksara Pallawa, bahasa Sanskerta, serta agama Hindu-Buddha yang mengakhiri zaman praaksara." },
+
+      // Bab 2 Praaksara & Asal-Usul Nenek Moyang (#51 - #65)
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Apa isi pokok dari 'Teori Yunnan' (tokoh: R.H. Geldern, J.H.C. Kern, Moh. Ali) mengenai asal-usul nenek moyang bangsa Indonesia?", a: "Menyatakan bahwa nenek moyang bangsa Indonesia berasal dari wilayah Yunnan (Tiongkok Selatan) yang bermigrasi ke Nusantara karena desakan suku lain dan bencana alam." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Apa isi 'Teori Out of Taiwan' yang dikemukakan oleh Peter Bellwood dan Harry Truman Simanjuntak?", a: "Menyatakan bahwa leluhur bangsa Indonesia adalah penutur bahasa Austronesia yang bermigrasi dari Pulau Formosa (Taiwan) sekitar 4000–2000 SM melalui Filipina menuju Nusantara." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Mengapa 'Teori Nusantara' (tokoh: Moh. Yamin, Gorys Keraf, J. Crawford) menyebutkan bahwa bangsa Indonesia berasal dari wilayah Nusantara sendiri?", a: "Karena peradaban bangsa Melayu/Nusantara sudah tinggi dan didukung banyaknya temuan fosil manusia purba (seperti Homo soloensis & Homo wajakensis) di Pulau Jawa." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Bagaimana penjelasan 'Teori Out of Africa' (tokoh: Max Ingman) tentang penyebaran manusia modern ke Nusantara?", a: "Berdasarkan kajian genetika (DNA mitokondria), seluruh manusia modern (Homo sapiens) berasal dari Afrika dan bermigrasi ke luar Afrika termasuk Nusantara sekitar 60.000–70.000 tahun silam." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Kapan gelombang migrasi bangsa 'Proto Melayu' (Melayu Tua) masuk ke Nusantara, dan suku apa saja yang menjadi keturunannya saat ini?", a: "Masuk sekitar tahun 1500 SM membawa kebudayaan batu baru (Neolitikum). Keturunannya antara lain Suku Dayak, Toraja, Batak, Sasak, Nias, dan Mentawai." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Sebutkan 2 jalur kedatangan bangsa Proto Melayu ke Nusantara beserta alat batu khas yang dibawanya!", a: "1) Jalur Barat (Semenanjung Malaya - Sumatera - Jawa) membawa Kapak Persegi; 2) Jalur Utara/Timur (Filipina - Sulawesi - Maluku - Papua) membawa Kapak Lonjong." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Kapan gelombang bangsa 'Deutro Melayu' (Melayu Muda) datang ke Nusantara dan kebudayaan apa yang mereka bawa?", a: "Datang sekitar tahun 500 SM melalui jalur barat dengan membawa kebudayaan logam/perunggu (Dongson). Keturunannya: Suku Jawa, Melayu, Bugis, Minang, Sunda, dan Bali." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Sebelum kedatangan penutur Austronesia, kepulauan Nusantara telah dihuni oleh rumpun ras yang kini mayoritas mendiami Papua, Maluku, dan NTT, yaitu ras...", a: "Ras Papua-Melanesoid (Melanesia)." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Kelompok ras penduduk tertua di Nusantara yang berciri kulit gelap dan rambut keriting serta meninggalkan jejak keturunan pada Suku Kubu (Anak Dalam) di Jambi dan Suku Sakai di Siak adalah...", a: "Bangsa Sebelum Melayu: Ras Negrito dan Ras Weddid (Weddoid)." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Apa yang dimaksud dengan 'Revolusi Neolitikum' pada masa praaksara di Indonesia?", a: "Perubahan besar corak hidup manusia dari berburu-meramu dan berpindah-pindah menjadi bercocok tanam dan menetap (food producing & sedenter)." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Jelaskan perbedaan antara 'Kjokkenmoddinger' dan 'Abris Sous Roche' yang menjadi ciri khas kehidupan zaman Mesolitikum!", a: "Kjokkenmoddinger adalah bukit tumpukan kulit kerang di pesisir, sedangkan Abris Sous Roche adalah gua-gua karang yang dijadikan tempat tinggal." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Pusat kebudayaan zaman batu madya (Mesolitikum) dari Lembah Sungai Merah (Vietnam Utara) yang memengaruhi Nusantara dengan alat khas 'Kapak Genggam Sumatera' adalah...", a: "Kebudayaan Bacson-Hoabinh." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Sebutkan minimal 4 benda peninggalan zaman logam (Perunggu) yang berkembang pada masa Perundagian di Nusantara!", a: "Nekara Perunggu, Moko, Kapak Corong, Bejana Perunggu, Candrasa, dan Arca Perunggu." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Kebudayaan masa logam awal dari pesisir Vietnam Selatan yang memiliki kemiripan erat dengan tradisi tempayan kubur dan perhiasan manik-manik di Nusantara adalah...", a: "Kebudayaan Sa Huynh." },
+      { cat: "Asal-Usul Nenek Moyang & Praaksara", q: "Sebutkan minimal 4 bangunan batu besar dari tradisi 'Megalitikum' di Indonesia yang berkaitan dengan pemujaan roh nenek moyang!", a: "Menhir, Dolmen, Sarkofagus, Kubur Batu, Waruga, dan Punden Berundak." }
+    ];
+
+    // 30 Kartu Tantangan
+    let challengeDeck = [
+      { id: 1,  type: 'normal', icon: '🌸', title: 'Aroma Cengkih!', desc: 'Tarik napas dalam-dalam lewat hidung lalu embuskan perlahan sambil berkata, "Ahhh, wangi cengkih!" dengan ekspresi super lega.', points: 10 },
+      { id: 2,  type: 'normal', icon: '🗣️', title: 'Sebutkan Huruf Vokal!', desc: 'Sebutkan 5 huruf vokal (A, I, U, E, O) secara berurutan dengan volume suara yang makin lama makin mengecil!', points: 10 },
+      { id: 3,  type: 'normal', icon: '💆', title: 'Pijat Kilat!', desc: 'Pijat pundak teman yang duduk di sebelah kanan atau kirimu selama 5 detik sambil bilang "Kamu hebat!".', points: 10 },
+      { id: 4,  type: 'normal', icon: '😍', title: 'Pujian Kilat!', desc: 'Tatap mata teman di depanmu, lalu berikan satu pujian singkat yang tulus dalam waktu 3 detik!', points: 10 },
+      { id: 5,  type: 'normal', icon: '🎶', title: 'Paduan Suara Rempah!', desc: 'Semua anggota kelompok harus serentak meneriakkan kata "CENGKIH, PALA, LADA!" secara bersamaan tanpa ada yang mendahului.', points: 10 },
+      { id: 6,  type: 'normal', icon: '⚡', title: 'Eja Rempah Estafet!', desc: 'Eja kata "R-E-M-P-A-H" secara estafet (Orang 1: R, Orang 2: E, Orang 3: M, dst.) secepat kilat hingga selesai!', points: 10 },
+      { id: 7,  type: 'normal', icon: '😠', title: 'Penjaga Benteng Portugis!', desc: 'Semua anggota kelompok langsung berdiri tegak, melipat tangan di dada, dan memasang wajah super galak atau garang.', points: 10 },
+      { id: 8,  type: 'normal', icon: '🐍', title: 'Paduan Suara Bisik!', desc: 'Semua anggota kelompok harus mengucapkan kata "SEMANGAT" secara bersamaan tetapi dengan suara berbisik (suara ular).', points: 10 },
+      { id: 9,  type: 'normal', icon: '👏', title: 'Tepuk Pramuka Kilat!', desc: 'Seluruh anggota kelompok harus melakukan 1 kali tepuk Pramuka secara serentak dan kompak dari awal sampai akhir!', points: 10 },
+      { id: 10, type: 'normal', icon: '😁', title: 'Senyum Pepsodent!', desc: 'Semua anggota kelompok harus kompak menghadap teman-teman dan memberikan senyuman paling lebar hingga gigi terlihat tanpa bersuara!', points: 10 },
+      { id: 11, type: 'zonk',   icon: '🌪️', title: 'ZONK 1: Angin Ribut!', desc: 'Zonk Kelompok / Angin Ribut! Semua anggota kelompok harus berdiri, berputar 1 kali di tempat masing-masing, lalu langsung duduk kembali dengan rapi! (Penalti: Pion mundur 2 kotak).', movePenalty: -2 },
+      { id: 12, type: 'normal', icon: '🔴', title: 'Sebutkan 3 Benda Merah!', desc: 'Sebutkan 3 benda berwarna MERAH di dalam kelas ini secepat-cepatnya!', points: 10 },
+      { id: 13, type: 'safe',   icon: '🍀', title: 'Kartu Aman!', desc: 'Kamu beruntung! Tidak perlu melakukan apa pun, dapat bonus +5 poin gratis dan silakan langsung lanjut main game!', points: 5 },
+      { id: 14, type: 'normal', icon: '🎉', title: 'Tepuk Tangan Massal!', desc: 'Minta seluruh kelas bertepuk tangan meriah khusus untukmu selama 5 detik sebelum kamu lanjut.', points: 10 },
+      { id: 15, type: 'normal', icon: '🙌', title: 'High Five Keliling!', desc: 'Lakukan high five (tos) ke 3 teman terdekatmu sambil teriak "Semangat!".', points: 10 },
+      { id: 16, type: 'normal', icon: '🦁', title: 'Auman Singa!', desc: 'Berdiri, tatap satu teman, lalu tirukan suara macan atau singa yang sedang mengaum sekencang mungkin.', points: 10 },
+      { id: 17, type: 'normal', icon: '🚣', title: 'Dayung Perahu Bercadik!', desc: 'Semua anggota kelompok memperagakan gerakan mendayung perahu secara kompak ke kiri dan kanan sambil teriak "DAYUNG! DAYUNG! SAMPAN!"', points: 10 },
+      { id: 18, type: 'normal', icon: '🔭', title: 'Teropong Bintang Pelaut!', desc: 'Buat lingkaran teropong dengan kedua tangan di depan mata, tengok ke langit kelas sambil berseru: "Pulau Maluku terlihat Kapten!"', points: 10 },
+      { id: 19, type: 'normal', icon: '🔢', title: 'Hitung Cepat Pelaut!', desc: 'Hitung mundur dari angka 10 sampai 1 secara serentak satu kelompok dengan suara lantang dan kompak!', points: 10 },
+      { id: 20, type: 'normal', icon: '🔥', title: 'Tepuk Semangat Kompak!', desc: 'Lakukan "Tepuk Semangat" (Se... Ma... Ngat... SEMANGAT!) bersama seluruh anggota kelompokmu dengan penuh energi!', points: 10 },
+      { id: 21, type: 'normal', icon: '🧭', title: 'Patung Nakhoda Kapal!', desc: 'Dalam hitungan 3, seluruh anggota kelompok membeku (freeze) dengan gaya seorang Nakhoda Kapal selama 5 detik tanpa tertawa!', points: 10 },
+      { id: 22, type: 'normal', icon: '🌊', title: 'Suara Ombak Samudra!', desc: 'Buat gelombang ombak (Mexican Wave) dari anggota paling kiri ke kanan sambil menirukan suara deburan ombak "BYUURRR!"', points: 10 },
+      { id: 23, type: 'normal', icon: '🥁', title: 'Tabuhan Nekara Perunggu!', desc: 'Tepuk meja atau paha masing-masing dengan irama kompak "DUG-DUG-TAK! DUG-DUG-TAK!" sebanyak 3 kali!', points: 10 },
+      { id: 24, type: 'normal', icon: '🤝', title: 'Barter Senyum Antarkelompok!', desc: 'Lambaikan tangan dengan ramah ke salah satu kelompok lawan sambil berteriak kompak: "Semoga pelayaran kalian lancar!"', points: 10 },
+      { id: 25, type: 'normal', icon: '🫡', title: 'Hormat Kapten Armada!', desc: 'Semua anggota kelompok berdiri tegak, memberikan hormat ala kapten kapal sambil berkata "Siap Berlayar!"', points: 10 },
+      { id: 26, type: 'normal', icon: '🤸', title: 'Senam Pelaut Segar!', desc: 'Rentangkan kedua tangan ke atas, miringkan badan ke kiri 2x dan ke kanan 2x sambil menarik napas segar!', points: 10 },
+      { id: 27, type: 'normal', icon: '📣', title: 'Slogan Jalur Rempah!', desc: 'Kepalkan tangan ke udara dan teriakkan bersama-sama: "REMPAH NUSANTARA, HARUM MENDUNIA!" dengan kompak!', points: 10 },
+      { id: 28, type: 'zonk',   icon: '⛈️', title: 'ZONK 2: Badai Laut Maluku!', desc: 'Ombak besar menghadang perahu! Semua anggota kelompok harus menggoyangkan badan ke kiri-kanan seperti perahu diterjang ombak selama 5 detik! (Penalti: Pion mundur 3 kotak).', movePenalty: -3 },
+      { id: 29, type: 'zonk',   icon: '🪣', title: 'ZONK 3: Perahu Cadik Bocor!', desc: 'Air laut masuk ke perahu! Semua anggota kelompok harus berdiri mengangkat 1 kaki selama 5 detik sambil memperagakan gerakan menguras air! (Penalti: Pion mundur 2 kotak).', movePenalty: -2 },
+      { id: 30, type: 'zonk',   icon: '🌫️', title: 'ZONK 4: Kabut Tebal Samudra!', desc: 'Pandangan nakhoda tertutup kabut tebal! Semua anggota kelompok harus menutup mata dengan tangan selama 5 detik sambil berhitung 1 sampai 5! (Penalti: Skor -5 Poin & mundur 1 kotak).', movePenalty: -1, scorePenalty: -5 }
+    ];
+
+    let questionOrderIndex = 0;
+
+    /* =========================================================
+       4. MEMBANGUN PAPAN 10x10 & SVG ULAR/TANGGA
+    ========================================================= */
+    const packTileColors = ['tile-yellow', 'tile-purple', 'tile-green', 'tile-cyan', 'tile-orange', 'tile-magenta'];
+
+    function getCellCoordinates(tileNum) {
+      const zeroBased = tileNum - 1;
+      const rowFromBottom = Math.floor(zeroBased / 10);
+      const row = 9 - rowFromBottom;
+      const colInRow = zeroBased % 10;
+      const col = (rowFromBottom % 2 === 0) ? colInRow : (9 - colInRow);
+      return {
+        row,
+        col,
+        x: col * 100 + 50,
+        y: row * 100 + 50
+      };
+    }
+
+    function buildBoard() {
+      const grid = document.getElementById('boardGrid');
+      grid.innerHTML = '';
+
+      for (let r = 0; r < 10; r++) {
+        const rowFromBottom = 9 - r;
+        for (let c = 0; c < 10; c++) {
+          const num = (rowFromBottom % 2 === 0)
+            ? (rowFromBottom * 10 + c + 1)
+            : (rowFromBottom * 10 + (10 - c));
+
+          const cell = document.createElement('div');
+          const colorClass = packTileColors[(c + r * 2) % packTileColors.length];
+          cell.className = `board-cell ${colorClass}`;
+          cell.id = `cell-${num}`;
+          cell.onclick = () => inspectCell(num);
+
+          let icon = '';
+          let tagHtml = '';
+
+          if (num === 1) {
+            icon = '⛵';
+            tagHtml = `<div class="cell-tag" style="background:rgba(0,0,0,0.45);color:#fde047;">START</div>`;
+          } else if (num === 100) {
+            icon = '🏆';
+            tagHtml = `<div class="cell-tag" style="background:#fde047;color:#1c1917;">FINISH</div>`;
+          } else if (ladders[num]) {
+            icon = '🪜';
+            tagHtml = `<div class="cell-tag" style="background:rgba(6,78,59,0.82);color:#a7f3d0;">▲ Naik ${ladders[num].to}</div>`;
+          } else if (snakes[num]) {
+            icon = '🐍';
+            tagHtml = `<div class="cell-tag" style="background:rgba(136,19,55,0.82);color:#fecdd3;">▼ Turun ${snakes[num].to}</div>`;
+          } else if (questionSquares.has(num)) {
+            icon = '🃏';
+            tagHtml = `<div class="cell-tag" style="background:rgba(49,46,129,0.78);color:#fde047;">❓ SOAL</div>`;
+          } else if (challengeSquares.has(num)) {
+            icon = '⚡';
+            tagHtml = `<div class="cell-tag" style="background:rgba(0,0,0,0.45);color:#fef08a;">🎯 SERU</div>`;
+          }
+
+          cell.innerHTML = `
+            <div class="cell-top">
+              <span class="cell-num">${num}</span>
+              <span class="cell-icon">${icon}</span>
+            </div>
+            ${tagHtml}
+          `;
+          grid.appendChild(cell);
+        }
+      }
+
+      drawPackSnakesAndLaddersSVG();
+      initPawnOverlayElements();
+      renderPawns();
+    }
+
+    function drawPackSnakesAndLaddersSVG() {
+      const svg = document.getElementById('boardSvg');
+      let html = `<defs>
+        <filter id="dropShad" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.45"/>
+        </filter>
+      </defs>`;
+
+      const ladderThemes = {
+        brown:  { rail: '#8d5b3c', rung: '#a4704c', band: '#5c3822' },
+        tan:    { rail: '#e0a976', rung: '#f0c396', band: '#b57c4a' },
+        green:  { rail: '#689f38', rung: '#8bc34a', band: '#33691e' },
+        silver: { rail: '#9e9e9e', rung: '#bdbdbd', band: '#616161' },
+        orange: { rail: '#e67e22', rung: '#f39c12', band: '#a04000' }
+      };
+
+      for (const [startStr, data] of Object.entries(ladders)) {
+        const p1 = getCellCoordinates(parseInt(startStr));
+        const p2 = getCellCoordinates(data.to);
+        const theme = ladderThemes[data.style] || ladderThemes.brown;
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const len = Math.hypot(dx, dy);
+        const nx = (-dy / len) * 14;
+        const ny = (dx / len) * 14;
+
+        html += `<g filter="url(#dropShad)">`;
+        html += `<line x1="${p1.x - nx}" y1="${p1.y - ny}" x2="${p2.x - nx}" y2="${p2.y - ny}" stroke="${theme.rail}" stroke-width="7.5" stroke-linecap="round"/>`;
+        html += `<line x1="${p1.x + nx}" y1="${p1.y + ny}" x2="${p2.x + nx}" y2="${p2.y + ny}" stroke="${theme.rail}" stroke-width="7.5" stroke-linecap="round"/>`;
+
+        const steps = Math.max(5, Math.floor(len / 32));
+        for (let i = 1; i < steps; i++) {
+          const t = i / steps;
+          const cx = p1.x + dx * t;
+          const cy = p1.y + dy * t;
+          html += `<line x1="${cx - nx * 1.2}" y1="${cy - ny * 1.2}" x2="${cx + nx * 1.2}" y2="${cy + ny * 1.2}" stroke="${theme.rung}" stroke-width="5.5" stroke-linecap="round"/>`;
+          html += `<circle cx="${cx - nx}" cy="${cy - ny}" r="3.5" fill="${theme.band}"/>`;
+          html += `<circle cx="${cx + nx}" cy="${cy + ny}" r="3.5" fill="${theme.band}"/>`;
+        }
+        html += `</g>`;
+      }
+
+      const snakeThemes = {
+        magenta: { outline: '#7a1640', body: '#d83672', pattern: '#f472b6', dash: '10 18' },
+        yellow:  { outline: '#b45309', body: '#facc15', pattern: '#f97316', dash: '8 16' },
+        blue:    { outline: '#0c4a6e', body: '#2ba6cb', pattern: '#0369a1', dash: '9 18' },
+        red:     { outline: '#7f1d1d', body: '#dc2626', pattern: '#991b1b', dash: '12 14' },
+        green:   { outline: '#14532d', body: '#65a30d', pattern: '#365314', dash: '14 14' }
+      };
+
+      for (const [headStr, data] of Object.entries(snakes)) {
+        const p1 = getCellCoordinates(parseInt(headStr));
+        const p2 = getCellCoordinates(data.to);
+        const theme = snakeThemes[data.style] || snakeThemes.blue;
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+        const c1x = (p1.x + midX) / 2 - dy * 0.26;
+        const c1y = (p1.y + midY) / 2 + dx * 0.26;
+
+        const pathD = `M ${p1.x} ${p1.y} Q ${c1x} ${c1y} ${midX} ${midY} T ${p2.x} ${p2.y}`;
+        const angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        html += `<g filter="url(#dropShad)">
+          <path d="${pathD}" stroke="${theme.outline}" stroke-width="19" fill="none" stroke-linecap="round"/>
+          <path d="${pathD}" stroke="${theme.body}" stroke-width="14" fill="none" stroke-linecap="round"/>
+          <path d="${pathD}" stroke="${theme.pattern}" stroke-width="7" stroke-dasharray="${theme.dash}" fill="none" stroke-linecap="round" opacity="0.88"/>
+          <g transform="translate(${p1.x}, ${p1.y}) rotate(${angleDeg})">
+            <ellipse cx="-2" cy="0" rx="15" ry="11" fill="${theme.body}" stroke="${theme.outline}" stroke-width="2.2"/>
+            <ellipse cx="-4" cy="-4.5" rx="5.5" ry="4" fill="#fff" stroke="${theme.outline}" stroke-width="1.2"/>
+            <circle cx="-2.5" cy="-4.5" r="2" fill="#0f172a"/>
+            <ellipse cx="-4" cy="4.5" rx="5.5" ry="4" fill="#fff" stroke="${theme.outline}" stroke-width="1.2"/>
+            <circle cx="-2.5" cy="4.5" r="2" fill="#0f172a"/>
+          </g>
+        </g>`;
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function initPawnOverlayElements() {
+      const overlay = document.getElementById('pawnsOverlay');
+      overlay.innerHTML = '';
+
+      teams.forEach((team, idx) => {
+        const pawn = document.createElement('div');
+        pawn.id = `board-pawn-${team.id}`;
+        pawn.className = 'board-pawn';
+        pawn.onclick = (e) => {
+          e.stopPropagation();
+          selectTeamTurn(idx);
+        };
+        pawn.innerHTML = `
+          ${getClassicPawnSVG(team)}
+          <span class="pawn-code-badge">${team.code}</span>
+        `;
+        overlay.appendChild(pawn);
+      });
+    }
+
+    function renderPawns() {
+      const tileGroups = {};
+      teams.forEach((team, idx) => {
+        if (!tileGroups[team.pos]) tileGroups[team.pos] = [];
+        tileGroups[team.pos].push({ team, idx });
+      });
+
+      const multiSlotOffsets6 = [
+        { dx: 2.3, dy: 3.5 }, { dx: 5.0, dy: 3.5 }, { dx: 7.7, dy: 3.5 },
+        { dx: 2.3, dy: 7.6 }, { dx: 5.0, dy: 7.6 }, { dx: 7.7, dy: 7.6 }
+      ];
+
+      const multiSlotOffsets8 = [
+        { dx: 2.0, dy: 3.3 }, { dx: 4.0, dy: 3.3 }, { dx: 6.0, dy: 3.3 }, { dx: 8.0, dy: 3.3 },
+        { dx: 2.0, dy: 7.7 }, { dx: 4.0, dy: 7.7 }, { dx: 6.0, dy: 7.7 }, { dx: 8.0, dy: 7.7 }
+      ];
+
+      for (const [posStr, occupants] of Object.entries(tileGroups)) {
+        const pos = parseInt(posStr);
+        const coords = getCellCoordinates(pos);
+        const baseLeft = coords.col * 10;
+        const baseTop = coords.row * 10;
+        const count = occupants.length;
+
+        occupants.forEach((item, slotIdx) => {
+          const pawnEl = document.getElementById(`board-pawn-${item.team.id}`);
+          if (!pawnEl) return;
+
+          let leftPct, topPct;
+          if (count === 1) {
+            leftPct = baseLeft + 5.0;
+            topPct = baseTop + 5.8;
+          } else if (count === 2) {
+            leftPct = baseLeft + (slotIdx === 0 ? 3.2 : 6.8);
+            topPct = baseTop + 5.8;
+          } else if (count <= 6) {
+            const offset = multiSlotOffsets6[slotIdx % 6];
+            leftPct = baseLeft + offset.dx;
+            topPct = baseTop + offset.dy;
+          } else {
+            const offset = multiSlotOffsets8[slotIdx % 8];
+            leftPct = baseLeft + offset.dx;
+            topPct = baseTop + offset.dy;
+          }
+
+          pawnEl.style.left = `${leftPct}%`;
+          pawnEl.style.top = `${topPct}%`;
+          pawnEl.title = `${item.team.name} (${item.team.code}) • Kotak #${item.team.pos}`;
+
+          const isTurn = (item.idx === currentTurnIndex);
+          pawnEl.classList.toggle('active-turn-pawn', isTurn);
+          pawnEl.classList.toggle('crowded-pawn', count >= 3 && !isTurn);
+        });
+      }
+
+      renderSidebar();
+    }
+
+    function renderSidebar() {
+      if (currentTurnIndex >= teams.length) currentTurnIndex = 0;
+      const activeTeam = teams[currentTurnIndex];
+
+      document.getElementById('headerTeamCountLabel').textContent = `${teams.length} KELOMPOK`;
+      const quickSel = document.getElementById('quickTeamCountSelect');
+      if (quickSel) quickSel.value = String(teams.length);
+
+      document.getElementById('activeTeamBadge').innerHTML = getClassicPawnSVG(activeTeam);
+      document.getElementById('activeTeamName').textContent = `${activeTeam.name} (${activeTeam.code})`;
+      document.getElementById('activeTeamPos').textContent = `Posisi: Kotak #${activeTeam.pos}`;
+      document.getElementById('activeTeamScore').textContent = `${activeTeam.score} Poin`;
+
+      document.getElementById('deckCounterQuestion').textContent = questionDeck.length;
+      document.getElementById('deckCounterChallenge').textContent = challengeDeck.length;
+      document.getElementById('topCountQ').textContent = questionDeck.length;
+      document.getElementById('topCountC').textContent = challengeDeck.length;
+
+      const container = document.getElementById('teamsListContainer');
+      container.innerHTML = '';
+
+      teams.forEach((t, idx) => {
+        const isCurrent = (idx === currentTurnIndex);
+        const card = document.createElement('div');
+        card.className = `team-card ${isCurrent ? 'active-team' : ''}`;
+        card.onclick = () => selectTeamTurn(idx);
+
+        card.innerHTML = `
+          <div style="display:flex;align-items:center;gap:5px;min-width:0;flex:1;">
+            <div style="width:22px;height:28px;flex-shrink:0;">${getClassicPawnSVG(t)}</div>
+            <div style="overflow:hidden;flex:1;">
+              <div style="display:flex;align-items:center;gap:3px;">
+                <span style="font-weight:900;font-size:0.72rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</span>
+                <button class="team-edit-mini-btn" title="Rename" onclick="event.stopPropagation(); openTeamsConfigModal(${idx})">✏️</button>
+              </div>
+              <div style="font-size:0.62rem;color:#fbbf24;font-weight:800;">${t.code} • Kotak #${t.pos}</div>
+            </div>
+          </div>
+          <div style="text-align:right;margin-left:4px;">
+            <span style="font-weight:900;font-size:0.76rem;color:#4ade80;">${t.score}</span>
+            <span style="font-size:0.55rem;color:#a8a29e;display:block;">poin</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function addLog(msg) {
+      const box = document.getElementById('gameLog');
+      const div = document.createElement('div');
+      div.className = 'log-item';
+      div.innerHTML = msg;
+      box.prepend(div);
+    }
+
+    function selectTeamTurn(index) {
+      if (isAnimating) return;
+      currentTurnIndex = index;
+      playTone(480, 'sine', 0.06, 0, 0.12);
+      renderPawns();
+    }
+
+    function nextTurn() {
+      if (isAnimating) return;
+      currentTurnIndex = (currentTurnIndex + 1) % teams.length;
+      renderPawns();
+    }
+
+    /* =========================================================
+       5. DADU 3D & PERGERAKAN PION
+    ========================================================= */
+    let cubeSpinCounter = 0;
+
+    const facePipPositions = {
+      1: [5],
+      2: [1, 9],
+      3: [1, 5, 9],
+      4: [1, 3, 7, 9],
+      5: [1, 3, 5, 7, 9],
+      6: [1, 3, 4, 6, 7, 9]
+    };
+
+    const faceTargetRotations = {
+      1: { x: -16, y: -18,  z: 0 },
+      2: { x:  74, y:   0,  z: -14 },
+      3: { x: -16, y: -108, z: 0 },
+      4: { x: -16, y:  72,  z: 0 },
+      5: { x: -106, y:  0,  z: 14 },
+      6: { x: -16, y: 162,  z: 0 }
+    };
+
+    function build3DCubeMarkup() {
+      let html = `
+        <div class="cube-core"></div>
+        <div class="cube-core cube-core-x"></div>
+        <div class="cube-core cube-core-y"></div>
+        <div class="cube-core cube-core-d1"></div>
+        <div class="cube-core cube-core-d2"></div>
+      `;
+      for (let face = 1; face <= 6; face++) {
+        const activePips = facePipPositions[face];
+        let cells = '';
+        for (let c = 1; c <= 9; c++) {
+          cells += activePips.includes(c) ? `<span class="pip-dot"></span>` : `<span></span>`;
+        }
+        html += `<div class="cube-face face-${face}">${cells}</div>`;
+      }
+      return html;
+    }
+
+    function init3DCubes() {
+      const markup = build3DCubeMarkup();
+      document.getElementById('sidebarCube3D').innerHTML = markup;
+      document.getElementById('modalCube3D').innerHTML = markup;
+      setCubeToFace(6, false);
+    }
+
+    function setCubeToFace(faceVal, animateSpin = true) {
+      const target = faceTargetRotations[faceVal] || faceTargetRotations[1];
+      if (animateSpin) cubeSpinCounter++;
+      const extraX = animateSpin ? (cubeSpinCounter * 720) : 0;
+      const extraY = animateSpin ? (cubeSpinCounter * 1080) : 0;
+      const transformStr = `rotateX(${target.x + extraX}deg) rotateY(${target.y + extraY}deg) rotateZ(${target.z}deg)`;
+
+      document.getElementById('sidebarCube3D').style.transform = transformStr;
+      document.getElementById('modalCube3D').style.transform = transformStr;
+    }
+
+    function setDiceButtonsDisabled(disabled) {
+      document.querySelectorAll('.dice-btn').forEach(b => b.disabled = disabled);
+      document.getElementById('digitalDiceBtn').disabled = disabled;
+    }
+
+    async function play3DDiceRollAnimation(finalValue) {
+      const team = teams[currentTurnIndex];
+      const modal = document.getElementById('dice3dOverlayModal');
+      const modalCube = document.getElementById('modalCube3D');
+      const shadow = document.getElementById('modalDiceShadow');
+      const resultBadge = document.getElementById('diceModalResultBadge');
+      const statusTitle = document.getElementById('diceModalStatusTitle');
+      const teamTag = document.getElementById('diceModalTeamTag');
+
+      sfxDiceRattle();
+
+      teamTag.textContent = `${team.name} (${team.code})`;
+      teamTag.style.backgroundColor = team.mainColor;
+      teamTag.style.color = '#ffffff';
+      statusTitle.textContent = 'MENGOCOK DADU DIGITAL 3D...';
+      resultBadge.style.opacity = '0';
+      resultBadge.style.transform = 'scale(0.9)';
+
+      modal.classList.add('show');
+      await new Promise(r => setTimeout(r, 40));
+
+      modalCube.classList.remove('rolling-jump');
+      shadow.classList.remove('shadow-pulse');
+      void modalCube.offsetWidth;
+      modalCube.classList.add('rolling-jump');
+      shadow.classList.add('shadow-pulse');
+
+      setCubeToFace(finalValue, true);
+
+      await new Promise(r => setTimeout(r, 1050));
+      sfxDiceLand();
+
+      statusTitle.textContent = `ANGKA DADU: ${finalValue}!`;
+      resultBadge.textContent = `🎲 MAJU ${finalValue} LANGKAH!`;
+      resultBadge.style.opacity = '1';
+      resultBadge.style.transform = 'scale(1.04)';
+
+      await new Promise(r => setTimeout(r, 600));
+      modal.classList.remove('show');
+    }
+
+    async function handleDiceInput(diceValue, show3D = false) {
+      if (isAnimating) return;
+      isAnimating = true;
+      setDiceButtonsDisabled(true);
+
+      const team = teams[currentTurnIndex];
+      document.getElementById('lastRollBadge').textContent = `Dadu: ${diceValue}`;
+
+      if (show3D) {
+        addLog(`🎲 <b>${team.name} (${team.code})</b> mengocok Dadu Digital 3D dan mendapat angka <b>${diceValue}</b>.`);
+        await play3DDiceRollAnimation(diceValue);
+      } else {
+        addLog(`🎲 <b>${team.name} (${team.code})</b> maju <b>${diceValue} langkah</b> (Input Dadu Fisik).`);
+      }
+
+      await moveTeamPawnSteps(team, diceValue, true);
+    }
+
+    async function rollDigitalDice() {
+      if (isAnimating) return;
+      const roll = Math.floor(Math.random() * 6) + 1;
+      await handleDiceInput(roll, true);
+    }
+
+    function manualAdjustStep(delta) {
+      if (isAnimating) return;
+      const team = teams[currentTurnIndex];
+      team.pos = Math.max(1, Math.min(100, team.pos + delta));
+      sfxStep();
+      renderPawns();
+    }
+
+    async function moveTeamPawnSteps(team, steps, triggerLanding = true) {
+      isAnimating = true;
+      setDiceButtonsDisabled(true);
+
+      const dir = steps >= 0 ? 1 : -1;
+      const count = Math.abs(steps);
+
+      for (let i = 0; i < count; i++) {
+        let nextPos = team.pos + dir;
+        if (nextPos > 100) nextPos = 100 - (nextPos - 100);
+        if (nextPos < 1) nextPos = 1;
+        team.pos = nextPos;
+        sfxStep();
+        renderPawns();
+        await new Promise(r => setTimeout(r, 240));
+        if (team.pos === 100 && dir > 0) break;
+      }
+
+      isAnimating = false;
+      setDiceButtonsDisabled(false);
+
+      if (triggerLanding) {
+        setTimeout(() => triggerTileLandingEvent(team), 150);
+      }
+    }
+
+    /* =========================================================
+       6. EVALUASI KOTAK BERHENTI (DENGAN JEDA SMOOTH)
+    ========================================================= */
+    function triggerTileLandingEvent(team) {
+      const pos = team.pos;
+
+      if (pos === 100) {
+        sfxVictoryFanfare();
+        launchVictoryConfetti();
+        team.score += 50;
+        renderPawns();
+        addLog(`🏆 <b>${team.name}</b> MENCAPAI GARIS FINISH (#100)! CONFETTI KEMENANGAN!`);
+        setTimeout(() => {
+          showTileEventModal({
+            icon: '🏆🎉',
+            badge: 'JUARA GARIS FINISH #100',
+            title: `SELAMAT! ${team.name.toUpperCase()} MENANG!`,
+            desc: `Luar biasa! Pion ${team.name} (${team.code}) berhasil mencapai puncak papan di Kotak #100 dan meraih bonus Juara +50 Poin!`,
+            actionsHtml: `
+              <button class="btn-action" style="flex:1;background:#7c3aed;color:#fff;" onclick="launchVictoryConfetti();sfxVictoryFanfare();">🎉 Confetti Lagi!</button>
+              <button class="btn-action" style="flex:1;background:#f59e0b;color:#1c1917;" onclick="closeTileEventModal(true)">Selesai & Lanjut 🏆</button>
+            `
+          });
+        }, 180);
+        return;
+      }
+
+      if (ladders[pos]) {
+        const dest = ladders[pos].to;
+        sfxLadder();
+        addLog(`🪜 <b>${team.name}</b> naik tangga dari #${pos} ke #${dest}!`);
+        setTimeout(() => {
+          showTileEventModal({
+            icon: '🪜',
+            badge: `Kotak #${pos} • Tangga Naik`,
+            title: 'HORE! NAIK TANGGA!',
+            desc: `${ladders[pos].text}! Pion ${team.name} (${team.code}) naik menuju Kotak #${dest}!`,
+            actionsHtml: `<button class="btn-action" style="width:100%;background:#16a34a;color:#fff;" onclick="executeClimbOrSlide(${dest})">Naik ke Kotak #${dest} ⬆️</button>`
+          });
+        }, 180);
+        return;
+      }
+
+      if (snakes[pos]) {
+        const dest = snakes[pos].to;
+        sfxSnake();
+        addLog(`🐍 <b>${team.name}</b> terkena ular di #${pos}, turun ke #${dest}!`);
+        setTimeout(() => {
+          showTileEventModal({
+            icon: '🐍',
+            badge: `Kotak #${pos} • Kepala Ular`,
+            title: 'YAH... TURUN ULAR!',
+            desc: `${snakes[pos].text}! Pion ${team.name} (${team.code}) harus turun ke Kotak #${dest}!`,
+            actionsHtml: `<button class="btn-action" style="width:100%;background:#dc2626;color:#fff;" onclick="executeClimbOrSlide(${dest})">Turun ke Kotak #${dest} ⬇️</button>`
+          });
+        }, 180);
+        return;
+      }
+
+      if (questionSquares.has(pos)) {
+        addLog(`🃏 <b>${team.name}</b> membuka Flashcard Soal di Kotak #${pos}.`);
+        setTimeout(() => openFlashcardModal(true), 180);
+        return;
+      }
+
+      if (challengeSquares.has(pos)) {
+        addLog(`⚡ <b>${team.name}</b> mengambil Kartu Tantangan di Kotak #${pos}.`);
+        setTimeout(() => openChallengeModal(true), 180);
+        return;
+      }
+
+      setTimeout(() => nextTurn(), 350);
+    }
+
+    function executeClimbOrSlide(destTile) {
+      teams[currentTurnIndex].pos = destTile;
+      closeTileEventModal(false);
+      renderPawns();
+      setTimeout(() => nextTurn(), 350);
+    }
+
+    function inspectCell(num) {
+      if (isAnimating) return;
+      if (questionSquares.has(num)) {
+        openFlashcardModal(false);
+      } else if (challengeSquares.has(num)) {
+        openChallengeModal(false);
+      } else {
+        let info = 'Kotak Aman / Tempat Berlabuh.';
+        let ic = '📍';
+        if (ladders[num]) { info = ladders[num].text; ic = '🪜'; }
+        else if (snakes[num]) { info = snakes[num].text; ic = '🐍'; }
+        showTileEventModal({
+          icon: ic,
+          badge: `Kotak #${num}`,
+          title: `INFO KOTAK #${num}`,
+          desc: info,
+          actionsHtml: `
+            <button class="btn-action" style="flex:1;background:#2563eb;color:#fff;" onclick="teams[currentTurnIndex].pos=${num};closeTileEventModal(false);renderPawns();">Pindahkan ${teams[currentTurnIndex].code} ke #${num}</button>
+            <button class="btn-action" style="background:#e7e5e4;color:#1c1917;" onclick="closeTileEventModal(false)">Tutup</button>
+          `
+        });
+      }
+    }
+
+    function showTileEventModal({ icon, badge, title, desc, actionsHtml }) {
+      document.getElementById('eventModalIcon').textContent = icon;
+      document.getElementById('eventModalBadge').textContent = badge;
+      document.getElementById('eventModalTitle').textContent = title;
+      document.getElementById('eventModalDesc').textContent = desc;
+      document.getElementById('eventModalActions').innerHTML = actionsHtml;
+      document.getElementById('tileEventModal').classList.add('show');
+    }
+
+    function closeTileEventModal(advance = false) {
+      document.getElementById('tileEventModal').classList.remove('show');
+      if (advance) nextTurn();
+    }
+
+    /* =========================================================
+       7. FLASHCARD MODAL (SMOOTH TIMER & PERINGATAN 5 DETIK)
+    ========================================================= */
+    let qTimerInterval = null;
+    let advanceAfterQ = false;
+
+    function openFlashcardModal(fromBoard = false) {
+      advanceAfterQ = fromBoard;
+      const team = teams[currentTurnIndex];
+      const badge = document.getElementById('questionTeamBadge');
+      badge.textContent = `${team.name} (${team.code}) • Kotak #${team.pos}`;
+      badge.style.backgroundColor = team.mainColor;
+      badge.style.color = '#fff';
+
+      document.getElementById('questionCardInner').classList.remove('is-flipped');
+      loadFlashcardByIndex(questionOrderIndex % questionDeck.length);
+      questionOrderIndex++;
+
+      document.getElementById('questionModal').classList.add('show');
+      sfxFlip();
+      startQuestionTimer(15);
+    }
+
+    function loadFlashcardByIndex(idx) {
+      const card = questionDeck[idx];
+      const categoryName = card.cat || (idx >= 50 ? 'Asal-Usul Nenek Moyang & Praaksara' : 'Jalur Rempah Praaksara');
+      document.getElementById('qCardTopicBadge').textContent = `🌿 Flashcard #${idx + 1} / ${questionDeck.length}`;
+      document.getElementById('qCardBackNumber').textContent = `Kartu #${idx + 1} / ${questionDeck.length} (${categoryName})`;
+      document.getElementById('qCardCategoryPill').textContent = `📚 MATERI: ${categoryName.toUpperCase()}`;
+      document.getElementById('qCardQuestionText').textContent = card.q;
+      document.getElementById('qCardQuestionSmall').textContent = `Soal: "${card.q}"`;
+      document.getElementById('qCardAnswerText').textContent = card.a;
+    }
+
+    function drawAnotherFlashcard() {
+      document.getElementById('questionCardInner').classList.remove('is-flipped');
+      const rIdx = Math.floor(Math.random() * questionDeck.length);
+      loadFlashcardByIndex(rIdx);
+      sfxFlip();
+      startQuestionTimer(15);
+    }
+
+    function flipQuestionCard() {
+      document.getElementById('questionCardInner').classList.toggle('is-flipped');
+      sfxFlip();
+    }
+
+    function startQuestionTimer(sec = 15) {
+      clearInterval(qTimerInterval);
+      let rem = sec;
+      const el = document.getElementById('qCardTimer');
+      const bar = document.getElementById('qCardTimerBar');
+      const frontFace = document.getElementById('questionFrontFace');
+      const urgentAlert = document.getElementById('qCardUrgentAlert');
+
+      el.style.background = 'rgba(239,68,68,0.35)';
+      el.style.color = '#fecaca';
+      el.textContent = `⏱️ Waktu Jawab: ${rem} Detik`;
+
+      if (frontFace) frontFace.classList.remove('urgent-countdown');
+      if (urgentAlert) urgentAlert.classList.remove('show-alert');
+
+      if (bar) {
+        bar.style.transition = 'none';
+        bar.style.width = '100%';
+        bar.style.backgroundColor = '#4ade80';
+        void bar.offsetWidth;
+        bar.style.transition = 'width 1s linear, background-color 0.3s ease';
+      }
+
+      qTimerInterval = setInterval(() => {
+        rem--;
+        if (rem > 0) {
+          el.textContent = `⏱️ Waktu Jawab: ${rem} Detik`;
+          if (bar) {
+            bar.style.width = `${(rem / sec) * 100}%`;
+            if (rem <= 5) bar.style.backgroundColor = '#ef4444';
+            else if (rem <= 10) bar.style.backgroundColor = '#facc15';
+          }
+
+          if (rem <= 5) {
+            sfxCountdownTick(rem);
+            el.style.background = '#dc2626';
+            el.style.color = '#ffffff';
+            if (frontFace) frontFace.classList.add('urgent-countdown');
+            if (urgentAlert) {
+              urgentAlert.classList.add('show-alert');
+              urgentAlert.textContent = `🚨 PERINGATAN HITUNG MUNDUR: ${rem} DETIK!`;
+            }
+          }
+        } else {
+          clearInterval(qTimerInterval);
+          el.style.background = '#991b1b';
+          el.style.color = '#fde047';
+          el.textContent = '⏰ WAKTU HABIS (0 Detik)!';
+          if (bar) {
+            bar.style.width = '0%';
+            bar.style.backgroundColor = '#ef4444';
+          }
+          if (urgentAlert) {
+            urgentAlert.classList.add('show-alert');
+            urgentAlert.textContent = '⏰ WAKTU MENJAWAB HABIS! BALIK KARTU!';
+          }
+          sfxTimeUpBuzzer();
+        }
+      }, 1000);
+    }
+
+    function resolveQuestionCard(correct) {
+      clearInterval(qTimerInterval);
+      const team = teams[currentTurnIndex];
+      if (correct) {
+        sfxSuccess();
+        team.score += 10;
+        addLog(`🌟 <b>${team.name}</b> menjawab Flashcard dengan BENAR (+10 Poin)!`);
+      } else {
+        sfxZonk();
+        addLog(`💡 <b>${team.name}</b> belum tepat menjawab Flashcard.`);
+      }
+      closeQuestionModal();
+      renderPawns();
+    }
+
+    function closeQuestionModal() {
+      clearInterval(qTimerInterval);
+      document.getElementById('questionModal').classList.remove('show');
+      if (advanceAfterQ) {
+        advanceAfterQ = false;
+        setTimeout(() => nextTurn(), 250);
+      }
+    }
+
+    /* =========================================================
+       8. KARTU TANTANGAN & ZONK
+    ========================================================= */
+    let currentChallengeObj = null;
+    let advanceAfterC = false;
+
+    function openChallengeModal(fromBoard = false) {
+      advanceAfterC = fromBoard;
+      const team = teams[currentTurnIndex];
+      const badge = document.getElementById('challengeTeamBadge');
+      badge.textContent = `${team.name} (${team.code}) • Kotak #${team.pos}`;
+      badge.style.backgroundColor = team.mainColor;
+      badge.style.color = '#fff';
+
+      document.getElementById('challengeCardInner').classList.remove('is-flipped');
+      const rIdx = Math.floor(Math.random() * challengeDeck.length);
+      populateChallengeCard(rIdx);
+
+      document.getElementById('challengeModalActions').innerHTML = `
+        <button class="btn-action" style="flex:1;background:#fbbf24;color:#1c1917;" onclick="flipChallengeCard()">
+          👆 Klik untuk Buka Kartu Tantangan!
+        </button>
+        <button class="btn-action" style="background:#44403c;color:#fff;" onclick="closeChallengeModal(false)">
+          Tutup
+        </button>
+      `;
+
+      document.getElementById('challengeModal').classList.add('show');
+      sfxFlip();
+    }
+
+    function populateChallengeCard(idx) {
+      currentChallengeObj = challengeDeck[idx];
+      const backFace = document.getElementById('challengeCardBackFace');
+      const badge = document.getElementById('cCardBadge');
+      const icon = document.getElementById('cCardIcon');
+      const title = document.getElementById('cCardTitle');
+      const desc = document.getElementById('cCardDesc');
+      const footer = document.getElementById('cCardFooterNote');
+
+      icon.textContent = currentChallengeObj.icon || '🎯';
+      title.textContent = currentChallengeObj.title;
+      desc.textContent = currentChallengeObj.desc;
+
+      if (currentChallengeObj.type === 'zonk') {
+        backFace.style.background = '#fff1f2';
+        backFace.style.borderColor = '#e11d48';
+        badge.style.background = '#e11d48';
+        badge.style.color = '#fff';
+        badge.textContent = `💥 KARTU ZONK! (#${idx + 1} / ${challengeDeck.length})`;
+        footer.style.color = '#be123c';
+        footer.textContent = `⚠️ Penalti ZONK: Pion Mundur ${Math.abs(currentChallengeObj.movePenalty || 1)} Kotak!`;
+      } else if (currentChallengeObj.type === 'safe') {
+        backFace.style.background = '#f0fdf4';
+        backFace.style.borderColor = '#16a34a';
+        badge.style.background = '#16a34a';
+        badge.style.color = '#fff';
+        badge.textContent = `🍀 KARTU AMAN! (#${idx + 1} / ${challengeDeck.length})`;
+        footer.style.color = '#15803d';
+        footer.textContent = `🌟 Bonus Keberuntungan: +${currentChallengeObj.points || 5} Poin Gratis!`;
+      } else {
+        backFace.style.background = '#ffffff';
+        backFace.style.borderColor = '#f59e0b';
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#92400e';
+        badge.textContent = `⚡ Tantangan #${idx + 1} / ${challengeDeck.length}`;
+        footer.style.color = '#15803d';
+        footer.textContent = `🌟 Hadiah Kompak: +${currentChallengeObj.points || 10} Poin Kelompok`;
+      }
+    }
+
+    function flipChallengeCard() {
+      const inner = document.getElementById('challengeCardInner');
+      if (!inner.classList.contains('is-flipped')) {
+        inner.classList.add('is-flipped');
+        updateChallengeButtonsAfterFlip();
+      }
+    }
+
+    function drawAnotherChallengeCard() {
+      const rIdx = Math.floor(Math.random() * challengeDeck.length);
+      populateChallengeCard(rIdx);
+      updateChallengeButtonsAfterFlip();
+    }
+
+    function updateChallengeButtonsAfterFlip() {
+      if (currentChallengeObj && currentChallengeObj.type === 'zonk') {
+        sfxZonk();
+        document.getElementById('challengeModalActions').innerHTML = `
+          <button class="btn-action" style="width:100%;background:#e11d48;color:#fff;" onclick="applyZonkPenalty()">
+            🌪️ Lakukan Aksi Zonk & Mundur ${Math.abs(currentChallengeObj.movePenalty || 1)} Kotak
+          </button>
+        `;
+      } else {
+        sfxFlip();
+        const pts = currentChallengeObj ? (currentChallengeObj.points || 10) : 10;
+        document.getElementById('challengeModalActions').innerHTML = `
+          <button class="btn-action" style="flex:1;background:#16a34a;color:#fff;" onclick="completeChallenge(${pts})">
+            ✅ Selesai Kompak (+${pts} Poin)
+          </button>
+          <button class="btn-action" style="background:#44403c;color:#fff;" onclick="closeChallengeModal(true)">
+            Lewati
+          </button>
+        `;
+      }
+    }
+
+    function completeChallenge(pts) {
+      sfxSuccess();
+      const team = teams[currentTurnIndex];
+      team.score += pts;
+      addLog(`🎉 <b>${team.name}</b> menyelesaikan tantangan <i>${currentChallengeObj.title}</i> (+${pts} Poin)!`);
+      closeChallengeModal(true);
+      renderPawns();
+    }
+
+    async function applyZonkPenalty() {
+      const team = teams[currentTurnIndex];
+      const pen = currentChallengeObj ? (currentChallengeObj.movePenalty || -1) : -1;
+      const scorePen = currentChallengeObj ? (currentChallengeObj.scorePenalty || 0) : 0;
+      if (scorePen !== 0) team.score = Math.max(0, team.score + scorePen);
+      const shouldAdv = advanceAfterC;
+      addLog(`💥 <b>${team.name}</b> terkena <b>${currentChallengeObj.title}</b> (Mundur ${Math.abs(pen)} kotak)!`);
+      closeChallengeModal(false);
+      await moveTeamPawnSteps(team, pen, false);
+      renderPawns();
+      if (shouldAdv) setTimeout(() => nextTurn(), 350);
+    }
+
+    function closeChallengeModal(shouldAdvance = false) {
+      document.getElementById('challengeModal').classList.remove('show');
+      if (shouldAdvance || advanceAfterC) {
+        advanceAfterC = false;
+        setTimeout(() => nextTurn(), 250);
+      }
+    }
+
+    /* =========================================================
+       9. PENGATURAN KELOMPOK, RENAME & RESET
+    ========================================================= */
+    let tempModalTeamCount = 6;
+    let highlightedTeamIdx = -1;
+
+    function changeTeamCount(newCount) {
+      if (isAnimating) return;
+      const count = Math.max(2, Math.min(8, parseInt(newCount) || 6));
+      activeTeamCount = count;
+      teams = allTeamsPool.slice(0, activeTeamCount);
+      if (currentTurnIndex >= teams.length) currentTurnIndex = 0;
+      initPawnOverlayElements();
+      renderPawns();
+      addLog(`👥 Jumlah kelompok diubah menjadi <b>${activeTeamCount} Kelompok</b>.`);
+    }
+
+    function openTeamsConfigModal(focusTeamIdx = -1) {
+      tempModalTeamCount = activeTeamCount;
+      highlightedTeamIdx = focusTeamIdx;
+      renderModalTeamCountPills();
+      renderTeamsConfigRows();
+      document.getElementById('teamsConfigModal').classList.add('show');
+
+      if (focusTeamIdx >= 0) {
+        setTimeout(() => {
+          const inputEl = document.getElementById(`cfg-team-name-${focusTeamIdx}`);
+          if (inputEl) { inputEl.focus(); inputEl.select(); }
+        }, 60);
+      }
+    }
+
+    function closeTeamsConfigModal() {
+      document.getElementById('teamsConfigModal').classList.remove('show');
+    }
+
+    function renderModalTeamCountPills() {
+      const container = document.getElementById('modalTeamCountPills');
+      container.innerHTML = '';
+      for (let c = 2; c <= 8; c++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `team-count-pill ${c === tempModalTeamCount ? 'active-count' : ''}`;
+        btn.textContent = c;
+        btn.onclick = () => {
+          syncCurrentModalInputsToPool();
+          tempModalTeamCount = c;
+          renderModalTeamCountPills();
+          renderTeamsConfigRows();
+        };
+        container.appendChild(btn);
+      }
+    }
+
+    function syncCurrentModalInputsToPool() {
+      const rows = document.querySelectorAll('.team-config-row');
+      rows.forEach((row) => {
+        const idx = parseInt(row.getAttribute('data-team-idx'));
+        if (isNaN(idx) || !allTeamsPool[idx]) return;
+        const nameEl = document.getElementById(`cfg-team-name-${idx}`);
+        const codeEl = document.getElementById(`cfg-team-code-${idx}`);
+        if (nameEl && nameEl.value.trim()) allTeamsPool[idx].name = nameEl.value.trim();
+        if (codeEl && codeEl.value.trim()) allTeamsPool[idx].code = codeEl.value.trim().toUpperCase().slice(0, 4);
+      });
+    }
+
+    function selectTeamColorInModal(teamIdx, paletteIdx) {
+      syncCurrentModalInputsToPool();
+      const chosen = pawnColorPalette[paletteIdx];
+      if (!chosen || !allTeamsPool[teamIdx]) return;
+      allTeamsPool[teamIdx].mainColor = chosen.mainColor;
+      allTeamsPool[teamIdx].lightColor = chosen.lightColor;
+      allTeamsPool[teamIdx].darkColor = chosen.darkColor;
+      allTeamsPool[teamIdx].colorIdx = paletteIdx;
+      renderTeamsConfigRows();
+    }
+
+    function applyPresetTeamNames(presetType) {
+      syncCurrentModalInputsToPool();
+      const rempahNames = [
+        { name: 'Armada Cengkih',   code: 'CGK' },
+        { name: 'Armada Pala',      code: 'PLA' },
+        { name: 'Armada Lada',      code: 'LDA' },
+        { name: 'Armada Cendana',   code: 'CDN' },
+        { name: 'Armada Kayu Manis',code: 'KYM' },
+        { name: 'Armada Kemukus',   code: 'KMK' },
+        { name: 'Armada Kapur Barus',code: 'KPB' },
+        { name: 'Armada Kemenyan',  code: 'KMY' }
+      ];
+
+      for (let i = 0; i < 8; i++) {
+        if (presetType === 'rempah') {
+          allTeamsPool[i].name = rempahNames[i].name;
+          allTeamsPool[i].code = rempahNames[i].code;
+        } else {
+          allTeamsPool[i].name = `Kelompok ${i + 1}`;
+          allTeamsPool[i].code = `K${i + 1}`;
+        }
+      }
+      renderTeamsConfigRows();
+    }
+
+    function renderTeamsConfigRows() {
+      const container = document.getElementById('teamsConfigRowsContainer');
+      container.innerHTML = '';
+
+      for (let i = 0; i < tempModalTeamCount; i++) {
+        const t = allTeamsPool[i];
+        const row = document.createElement('div');
+        row.className = `team-config-row ${i === highlightedTeamIdx ? 'highlight-row' : ''}`;
+        row.setAttribute('data-team-idx', i);
+
+        let swatchesHtml = '';
+        pawnColorPalette.forEach((pal, pIdx) => {
+          const isSel = (t.colorIdx === pIdx);
+          swatchesHtml += `<button type="button" class="swatch-dot ${isSel ? 'selected-swatch' : ''}" style="background:${pal.mainColor};" title="${pal.name}" onclick="selectTeamColorInModal(${i}, ${pIdx})"></button>`;
+        });
+
+        row.innerHTML = `
+          <div style="width:34px;height:40px;position:relative;display:flex;align-items:center;justify-content:center;">
+            ${getClassicPawnSVG(t)}
+            <span class="pawn-code-badge" id="cfg-pawn-badge-${i}">${t.code}</span>
+          </div>
+          <div>
+            <div style="font-size:0.62rem;color:#a8a29e;font-weight:800;margin-bottom:2px;">Nama Kelompok #${i + 1}</div>
+            <input type="text" id="cfg-team-name-${i}" class="team-input" value="${t.name}" placeholder="Nama..." />
+          </div>
+          <div>
+            <div style="font-size:0.62rem;color:#a8a29e;font-weight:800;margin-bottom:2px;">Label</div>
+            <input type="text" id="cfg-team-code-${i}" class="team-input" maxlength="4" style="text-align:center;text-transform:uppercase;" value="${t.code}" oninput="document.getElementById('cfg-pawn-badge-${i}').textContent = this.value.toUpperCase() || 'K${i+1}'" />
+          </div>
+          <div>
+            <div style="font-size:0.62rem;color:#a8a29e;font-weight:800;margin-bottom:3px;">Warna</div>
+            <div class="color-swatches">${swatchesHtml}</div>
+          </div>
+        `;
+        container.appendChild(row);
+      }
+    }
+
+    function saveTeamsConfigModal() {
+      syncCurrentModalInputsToPool();
+      activeTeamCount = tempModalTeamCount;
+      teams = allTeamsPool.slice(0, activeTeamCount);
+      if (currentTurnIndex >= teams.length) currentTurnIndex = 0;
+
+      initPawnOverlayElements();
+      renderPawns();
+      closeTeamsConfigModal();
+      sfxSuccess();
+      addLog(`👥 Pengaturan <b>${activeTeamCount} Kelompok</b> berhasil diterapkan!`);
+    }
+
+    function openSettingsModal() {
+      document.getElementById('questionsInput').value = questionDeck.map(q => `${q.q} | ${q.a}`).join('\n');
+      document.getElementById('challengesInput').value = challengeDeck.map(c => `${c.title} | ${c.desc} | ${c.type}`).join('\n');
+      document.getElementById('settingsModal').classList.add('show');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('show');
+    }
+
+    function saveSettings() {
+      const qLines = document.getElementById('questionsInput').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const updatedDeck = [];
+      qLines.forEach(line => {
+        const parts = line.split('|');
+        if (parts.length >= 2) updatedDeck.push({ q: parts[0].trim(), a: parts.slice(1).join('|').trim() });
+        else updatedDeck.push({ q: line, a: '-' });
+      });
+      if (updatedDeck.length > 0) questionDeck = updatedDeck;
+
+      const cLines = document.getElementById('challengesInput').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const updatedChallenges = [];
+      cLines.forEach((line, i) => {
+        const parts = line.split('|').map(s => s.trim());
+        if (parts.length >= 2) {
+          const cType = (parts[2] || 'normal').toLowerCase();
+          updatedChallenges.push({
+            id: i + 1,
+            type: ['normal', 'safe', 'zonk'].includes(cType) ? cType : 'normal',
+            icon: cType === 'zonk' ? '🌪️' : (cType === 'safe' ? '🍀' : '⚡'),
+            title: parts[0],
+            desc: parts[1],
+            points: cType === 'safe' ? 5 : 10,
+            movePenalty: cType === 'zonk' ? -2 : 0
+          });
+        }
+      });
+      if (updatedChallenges.length > 0) challengeDeck = updatedChallenges;
+
+      closeSettingsModal();
+      renderPawns();
+      addLog('⚙️ Data Flashcard & Tantangan berhasil diperbarui!');
+    }
+
+    function openResetModal() {
+      document.getElementById('resetModal').classList.add('show');
+    }
+
+    function closeResetModal() {
+      document.getElementById('resetModal').classList.remove('show');
+    }
+
+    function confirmResetGame() {
+      allTeamsPool.forEach(t => { t.pos = 1; t.score = 0; });
+      currentTurnIndex = 0;
+      document.getElementById('lastRollBadge').textContent = 'Siap!';
+      closeResetModal();
+      sfxLadder();
+      renderPawns();
+      addLog('🔄 Permainan di-reset! Semua kelompok kembali ke Kotak #1.');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+      const modalOpen = document.querySelector('.modal-backdrop.show');
+      if (modalOpen) return;
+
+      if (e.key >= '1' && e.key <= '6') {
+        handleDiceInput(parseInt(e.key), false);
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        rollDigitalDice();
+      }
+    });
+
+    function initGame() {
+      buildBoard();
+      init3DCubes();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initGame);
+    } else {
+      initGame();
+    }
+  </script>
+</body>
+</html>
